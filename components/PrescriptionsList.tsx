@@ -285,7 +285,7 @@ export default function PrescriptionsList() {
                     </div>
                   </div>
 
-                  <div className="ml-9 flex gap-3">
+                  <div className="ml-9 flex flex-wrap gap-2">
                     <button 
                       onClick={() => {
                         const staffInfo = getStaffInfo(firstRx.staff_id)
@@ -393,34 +393,33 @@ export default function PrescriptionsList() {
                         printWindow?.document.close()
                         printWindow?.print()
                       }}
-                      className="px-4 py-2 text-blue-600 font-medium hover:text-blue-800 transition flex items-center gap-2"
+                      className="px-2 sm:px-4 py-2 text-blue-600 font-medium hover:text-blue-800 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
                     >
-                      <Printer size={18} />
-                      Print
+                      <Printer size={16} />
+                      <span>Print</span>
                     </button>
                     <button 
                       onClick={() => {
                         setShowAssignModal(prescriptions[0].id)
                         setSelectedStaffId(prescriptions[0].staff_id || '')
                       }}
-                      className="px-4 py-2 text-purple-600 font-medium hover:text-purple-800 transition flex items-center gap-2"
+                      className="px-2 sm:px-4 py-2 text-purple-600 font-medium hover:text-purple-800 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
                     >
-                      Assign Doctor
+                      Assign
                     </button>
                     <button 
                       onClick={() => setEditingPrescriptionId(prescriptions[0].id)}
-                      className="px-4 py-2 text-blue-600 font-medium hover:text-blue-800 transition flex items-center gap-2"
+                      className="px-2 sm:px-4 py-2 text-blue-600 font-medium hover:text-blue-800 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
                     >
-                      <Edit2 size={18} />
-                      Edit
+                      <Edit2 size={16} />
+                      <span>Edit</span>
                     </button>
                     <button 
                       onClick={() => setShowDeleteModal(prescriptions[0].id)}
-                      className="px-4 py-2 text-red-600 font-medium hover:text-red-800 transition flex items-center gap-2"
+                      className="px-2 sm:px-4 py-2 text-red-600 font-medium hover:text-red-800 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
                     >
-                      <Trash2 size={18} />
-                      Delete
-                    </button>
+                      <Trash2 size={16} />
+                      <span>Delete</span>
                   </div>
                 </div>
               )
@@ -429,25 +428,25 @@ export default function PrescriptionsList() {
         </div>
       </div>
 
-      {showAssignModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Assign Doctor/Nurse</h3>
-            <p className="text-gray-600 mb-4">Select a doctor or nurse to assign to this prescription</p>
-            <select
-              value={selectedStaffId}
-              onChange={(e) => setSelectedStaffId(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white mb-6"
-            >
-              <option value="">Select Doctor/Nurse</option>
-              {data.staff
-                .filter((staff) => staff.role !== 'admin')
-                .map((staff) => (
-                  <option key={staff.id} value={staff.id}>
-                    {staff.full_name} ({staff.role})
-                  </option>
-                ))}
-            </select>
+          {showAssignModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Assign Doctor/Nurse</h3>
+                <p className="text-gray-600 mb-4 text-sm">Select a doctor or nurse to assign to this prescription</p>
+                <select
+                  value={selectedStaffId}
+                  onChange={(e) => setSelectedStaffId(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white mb-6"
+                >
+                  <option value="">Select Doctor/Nurse</option>
+                  {data.staff
+                    .filter((staff) => staff.role !== 'admin')
+                    .map((staff) => (
+                      <option key={staff.id} value={staff.id}>
+                        {staff.full_name} ({staff.role})
+                      </option>
+                    ))}
+                </select>
             <div className="flex gap-3">
               <button
                 onClick={() => {

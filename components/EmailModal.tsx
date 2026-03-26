@@ -31,11 +31,20 @@ export default function EmailModal({
   const [success, setSuccess] = useState(false)
 
   const handleSend = async () => {
+    if (!subject.trim() || !message.trim()) {
+      setError('Subject and message cannot be empty')
+      return
+    }
+
     setLoading(true)
     setError('')
     try {
       console.log('📧 EmailModal: Sending email to:', patientEmail)
+      console.log('📧 Subject:', subject)
+      
+      // Call the onSend callback
       await onSend(subject, message)
+      
       console.log('✅ EmailModal: Email sent successfully')
       setSuccess(true)
       setTimeout(() => {
@@ -47,8 +56,10 @@ export default function EmailModal({
       
       // Provide specific guidance based on error
       let displayError = errorMsg
-      if (errorMsg.includes('500')) {
-        displayError = 'Email service error. Please try again or contact support.'
+      if (errorMsg.includes('500') || errorMsg.includes('503')) {
+        displayError = 'Email service temporarily unavailable. Please try again. Make sure your dev server has been restarted after changing environment variables.'
+      } else if (errorMsg.includes('400')) {
+        displayError = 'Invalid email request. Please check the email address.'
       } else if (errorMsg.includes('Gmail')) {
         displayError = 'Gmail configuration issue. Please contact administrator.'
       }
