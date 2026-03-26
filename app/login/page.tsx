@@ -1,9 +1,10 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 import LoginForm from '@/components/LoginForm'
 
-export default function LoginPage() {
+function LoginContent() {
   const searchParams = useSearchParams()
   const message = searchParams.get('message')
 
@@ -35,5 +36,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   )
 }

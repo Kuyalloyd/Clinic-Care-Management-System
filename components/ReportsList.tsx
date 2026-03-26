@@ -84,7 +84,7 @@ export default function ReportsPage() {
     
     return monthNames.slice(0, 6).map(month => ({
       month,
-      Appointments: monthlyData[month] || 0,
+      Visits: monthlyData[month] || 0,
     }))
   })()
 
@@ -241,7 +241,7 @@ export default function ReportsPage() {
                 }}
               />
               <Legend />
-              <Line type="monotone" dataKey="Appointments" stroke="#10B981" strokeWidth={2} dot={{ fill: '#10B981', r: 4 }} />
+              <Line type="monotone" dataKey="Visits" stroke="#10B981" strokeWidth={2} dot={{ fill: '#10B981', r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
