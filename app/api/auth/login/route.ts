@@ -5,9 +5,8 @@ export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json()
-
-    console.log(`Login attempt for: ${email}`)
+    const body = await request.json()
+    const { email, password } = body
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -15,7 +14,6 @@ export async function POST(request: NextRequest) {
     })
 
     if (error) {
-      console.error('Supabase auth error:', error)
       return NextResponse.json(
         { error: error.message || 'Authentication failed' },
         { status: 401 }
@@ -31,15 +29,15 @@ export async function POST(request: NextRequest) {
       response.cookies.set('auth-token', data.session.access_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24 * 7,
+        maxAge: 604800,
       })
     }
 
     return response
   } catch (error: any) {
-    console.error('Login route error:', error)
+    console.error('Login error:', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
