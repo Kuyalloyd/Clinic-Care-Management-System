@@ -18,7 +18,8 @@ export default function DashboardPage() {
   const router = useRouter()
   const { data, loading: dataLoading, refreshAll } = useDashboardData()
   const [activeTab, setActiveTab] = useState<TabType>('overview')
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false) // Changed to false for mobile-first
+  const [isMobile, setIsMobile] = useState(false)
   const [loading, setLoading] = useState(true)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
@@ -31,6 +32,14 @@ export default function DashboardPage() {
       setLoading(false)
       refreshAll()
     }
+
+    // Check if mobile
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
   const handleLogout = () => {
@@ -61,8 +70,10 @@ export default function DashboardPage() {
     <div className="flex h-screen bg-gray-100">
       <aside
         className={`${
-          sidebarOpen ? 'w-64' : 'w-20'
-        } bg-gradient-to-b from-slate-900 to-slate-800 text-white transition-all duration-300 flex flex-col shadow-xl`}
+          sidebarOpen 
+            ? 'translate-x-0 fixed md:relative md:translate-x-0 z-40 w-64' 
+            : '-translate-x-full md:translate-x-0 md:w-20 w-64'
+        } bg-gradient-to-b from-slate-900 to-slate-800 text-white transition-all duration-300 flex flex-col shadow-xl h-screen md:h-auto`}
       >
         <div className="p-4 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
@@ -73,7 +84,7 @@ export default function DashboardPage() {
               height={40}
               className="rounded-lg object-cover"
             />
-            {sidebarOpen && (
+            {(sidebarOpen || !isMobile) && (
               <div>
                 <h1 className="font-bold text-base text-white">Clinic Care Management System</h1>
               </div>
@@ -109,31 +120,31 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col bg-gray-50">
+      <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
         <header className="bg-white shadow-sm border-b border-gray-100">
-          <div className="px-8 py-4 flex items-center justify-between">
+          <div className="px-4 md:px-8 py-4 flex items-center justify-between gap-4">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-600"
+              className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-600 flex-shrink-0"
             >
               <Menu size={22} />
             </button>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Clinic Care Management System Dashboard</h2>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg md:text-xl font-bold text-gray-900 truncate">Clinic Care Dashboard</h2>
             </div>
-            <div className="w-10" />
+            <div className="w-1 md:w-10 flex-shrink-0" />
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-8">
+        <main className="flex-1 overflow-auto px-4 md:px-8 py-6 md:py-8">
           {activeTab === 'overview' && (
             <div className="space-y-8">
               <div>
                 <h2 className="section-title">Dashboard Overview</h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                <div className="card p-6 border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-6">
+                <div className="card p-3 md:p-6 border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-600 text-sm font-medium mb-1">Total Patients</p>
@@ -143,7 +154,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="card p-6 border-l-4 border-l-green-500 hover:shadow-md transition-shadow">
+                <div className="card p-3 md:p-6 border-l-4 border-l-green-500 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-600 text-sm font-medium mb-1">Today's Appointments</p>
@@ -155,7 +166,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="card p-6 border-l-4 border-l-amber-500 hover:shadow-md transition-shadow">
+                <div className="card p-3 md:p-6 border-l-4 border-l-amber-500 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-600 text-sm font-medium mb-1">Pending Prescriptions</p>
@@ -165,7 +176,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="card p-6 border-l-4 border-l-orange-500 hover:shadow-md transition-shadow">
+                <div className="card p-3 md:p-6 border-l-4 border-l-orange-500 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-600 text-sm font-medium mb-1">Pending Payments</p>
@@ -177,7 +188,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="card p-6 border-l-4 border-l-red-500 hover:shadow-md transition-shadow">
+                <div className="card p-3 md:p-6 border-l-4 border-l-red-500 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-600 text-sm font-medium mb-1">Outstanding Amount</p>
