@@ -19,7 +19,7 @@ export interface Patient {
   phone: string
   address: string
   city: string
-  state: string
+  region: string
   zip_code: string
   symptoms?: string
   insurance_provider?: string
