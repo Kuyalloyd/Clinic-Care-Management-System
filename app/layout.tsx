@@ -17,6 +17,7 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "Clinic Care Management System - Healthcare Management",
   description: "Modern clinic care management system with patient records, appointments, prescriptions, and billing",
+  viewport: "width=device-width, initial-scale=1",
   icons: {
     icon: "/images/favicon.ico",
   },
