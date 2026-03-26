@@ -420,6 +420,7 @@ export default function PrescriptionsList() {
                     >
                       <Trash2 size={16} />
                       <span>Delete</span>
+                    </button>
                   </div>
                 </div>
               )
