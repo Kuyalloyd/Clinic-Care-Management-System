@@ -1,0 +1,4 @@
+ALTER TABLE bills DISABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON bills FROM authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bills TO authenticated;

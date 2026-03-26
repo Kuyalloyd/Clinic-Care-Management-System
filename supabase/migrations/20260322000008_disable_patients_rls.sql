@@ -1,0 +1,4 @@
+ALTER TABLE patients DISABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON patients FROM authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON patients TO authenticated;
