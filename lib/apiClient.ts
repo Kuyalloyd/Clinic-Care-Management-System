@@ -4,15 +4,8 @@ class APIClient {
   private client: AxiosInstance
 
   constructor() {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    
-    // Warn if not in production and using localhost fallback
-    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_APP_URL) {
-      console.warn('⚠️ NEXT_PUBLIC_APP_URL is not set. API calls may fail on Vercel. Set it in Vercel Environment Variables.')
-    }
-    
     this.client = axios.create({
-      baseURL: appUrl,
+      baseURL: '/api',
       headers: {
         'Content-Type': 'application/json',
       },
