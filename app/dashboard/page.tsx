@@ -68,12 +68,20 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-screen bg-gray-100">
+      {/* Mobile Overlay */}
+      {sidebarOpen && isMobile && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       <aside
         className={`${
           sidebarOpen 
-            ? 'translate-x-0 fixed md:relative md:translate-x-0 z-40 w-64' 
-            : '-translate-x-full md:translate-x-0 md:w-20 w-64'
-        } bg-gradient-to-b from-slate-900 to-slate-800 text-white transition-all duration-300 flex flex-col shadow-xl h-screen md:h-auto`}
+            ? 'translate-x-0' 
+            : '-translate-x-full'
+        } fixed md:relative md:translate-x-0 md:w-20 lg:w-64 z-40 w-64 bg-gradient-to-b from-slate-900 to-slate-800 text-white transition-all duration-300 flex flex-col shadow-xl h-screen`}
       >
         <div className="p-4 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
@@ -84,9 +92,9 @@ export default function DashboardPage() {
               height={40}
               className="rounded-lg object-cover"
             />
-            {(sidebarOpen || !isMobile) && (
+            {!isMobile && (
               <div>
-                <h1 className="font-bold text-base text-white">Clinic Care Management System</h1>
+                <h1 className="font-bold text-base text-white">Clinic Care</h1>
               </div>
             )}
           </div>
@@ -96,15 +104,18 @@ export default function DashboardPage() {
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition font-medium text-sm ${
+              onClick={() => {
+                setActiveTab(item.id)
+                if (isMobile) setSidebarOpen(false)
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition font-medium text-sm ${
                 activeTab === item.id
                   ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
                   : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
               }`}
             >
-              <item.icon size={18} />
-              {sidebarOpen && <span>{item.label}</span>}
+              <item.icon size={20} />
+              <span>{item.label}</span>
             </button>
           ))}
         </nav>
@@ -112,31 +123,30 @@ export default function DashboardPage() {
         <div className="p-4 border-t border-slate-700/50">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition font-medium text-sm"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition font-medium text-sm"
           >
-            <LogOut size={18} />
-            {sidebarOpen && <span>Logout</span>}
+            <LogOut size={20} />
+            <span>Logout</span>
           </button>
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
-        <header className="bg-white shadow-sm border-b border-gray-100">
-          <div className="px-4 md:px-8 py-4 flex items-center justify-between gap-4">
+      <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden w-full md:w-auto">
+        <header className="bg-white shadow-sm border-b border-gray-100 flex-shrink-0">
+          <div className="px-4 py-3 md:px-8 md:py-4 flex items-center justify-between gap-3">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-600 flex-shrink-0"
+              className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-600 flex-shrink-0 md:hidden"
             >
-              <Menu size={22} />
+              <Menu size={24} />
             </button>
             <div className="flex-1 min-w-0">
-              <h2 className="text-lg md:text-xl font-bold text-gray-900 truncate">Clinic Care Dashboard</h2>
+              <h2 className="text-base md:text-xl font-bold text-gray-900 truncate">Clinic Care Dashboard</h2>
             </div>
-            <div className="w-1 md:w-10 flex-shrink-0" />
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto px-4 md:px-8 py-6 md:py-8">
+        <main className="flex-1 overflow-auto px-3 md:px-8 py-4 md:py-8">
           {activeTab === 'overview' && (
             <div className="space-y-8">
               <div>
