@@ -247,13 +247,59 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
 5. ✅ Configure backup strategy
 
 ### Deploy to Vercel (Recommended)
+
+**IMPORTANT: Environment Variables Required for Login to Work**
+
+1. **Push code to GitHub**
+   ```bash
+   git add .
+   git commit -m "Ready for deployment"
+   git push origin main
+   ```
+
+2. **Create Vercel Project**
+   - Go to [vercel.com](https://vercel.com)
+   - Import this GitHub repository
+   - Select Next.js as framework (auto-detected)
+
+3. **Add Environment Variables** (CRITICAL - Login won't work without this!)
+   - In Vercel dashboard: **Settings** → **Environment Variables**
+   - Add the following variables:
+   
+   ```
+   NEXT_PUBLIC_SUPABASE_URL         = your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY    = your_supabase_anon_key
+   SUPABASE_SERVICE_ROLE_KEY        = your_supabase_service_role_key
+   NEXT_PUBLIC_APP_URL              = https://your-app.vercel.app
+   ```
+   
+   ⚠️ **Replace `your-app.vercel.app` with your actual Vercel URL**
+
+4. **Deploy**
+   - Click **Deploy**
+   - Wait for build to complete
+   - Test login at your deployed URL
+
+### Alternative: Deploy via CLI
 ```bash
 # Install Vercel CLI
 npm i -g vercel
 
+# Login to Vercel
+vercel login
+
 # Deploy
 vercel
+
+# Set environment variables (will prompt you)
+vercel env add
 ```
+
+### If Login Fails After Deployment
+1. Check Vercel logs: **Deployments** → **View Logs**
+2. Verify `NEXT_PUBLIC_APP_URL` matches your Vercel URL exactly
+3. Confirm all Supabase credentials are correct
+4. Redeploy after fixing environment variables
 
 ## 🐛 Troubleshooting
 
