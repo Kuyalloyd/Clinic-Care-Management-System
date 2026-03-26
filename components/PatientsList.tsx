@@ -66,14 +66,14 @@ export default function PatientsList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-1">Patient Records</h2>
           <p className="text-gray-600 text-sm">Manage all patient information</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="btn-primary btn-lg"
+          className="btn-primary btn-lg w-full sm:w-auto"
         >
           <Plus size={20} />
           Add Patient

@@ -180,7 +180,7 @@ export default function BillingList() {
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="btn-primary btn-lg"
+          className="btn-primary btn-lg w-full sm:w-auto"
         >
           <Plus size={20} />
           New Invoice
