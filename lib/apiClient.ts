@@ -21,117 +21,117 @@ class APIClient {
   }
 
   login(email: string, password: string) {
-    return this.client.post('/api/auth/login', { email, password })
+    return this.client.post('/auth/login', { email, password })
   }
 
   signup(email: string, password: string, fullName: string) {
-    return this.client.post('/api/auth/signup', { email, password, fullName })
+    return this.client.post('/auth/signup', { email, password, fullName })
   }
 
   logout() {
-    return this.client.post('/api/auth/logout')
+    return this.client.post('/auth/logout')
   }
 
   getAllPatients() {
-    return this.client.get('/api/patients')
+    return this.client.get('/patients')
   }
 
   getPatient(id: string) {
-    return this.client.get(`/api/patients/${id}`)
+    return this.client.get(`/patients/${id}`)
   }
 
   createPatient(data: any) {
-    return this.client.post('/api/patients', data)
+    return this.client.post('/patients', data)
   }
 
   updatePatient(id: string, data: any) {
-    return this.client.put(`/api/patients/${id}`, data)
+    return this.client.put(`/patients/${id}`, data)
   }
 
   deletePatient(id: string) {
-    return this.client.delete(`/api/patients/${id}`)
+    return this.client.delete(`/patients/${id}`)
   }
 
   getAllAppointments() {
-    return this.client.get('/api/appointments')
+    return this.client.get('/appointments')
   }
 
   getAppointment(id: string) {
-    return this.client.get(`/api/appointments/${id}`)
+    return this.client.get(`/appointments/${id}`)
   }
 
   createAppointment(data: any) {
-    return this.client.post('/api/appointments', data)
+    return this.client.post('/appointments', data)
   }
 
   updateAppointment(id: string, data: any) {
-    return this.client.put(`/api/appointments/${id}`, data)
+    return this.client.put(`/appointments/${id}`, data)
   }
 
   deleteAppointment(id: string) {
-    return this.client.delete(`/api/appointments/${id}`)
+    return this.client.delete(`/appointments/${id}`)
   }
 
   getAllPrescriptions() {
-    return this.client.get('/api/prescriptions')
+    return this.client.get('/prescriptions')
   }
 
   getPrescriptionsByPatient(patientId: string) {
-    return this.client.get(`/api/prescriptions?patient_id=${patientId}`)
+    return this.client.get(`/prescriptions?patient_id=${patientId}`)
   }
 
   createPrescription(data: any) {
-    return this.client.post('/api/prescriptions', data)
+    return this.client.post('/prescriptions', data)
   }
 
   updatePrescription(id: string, data: any) {
-    return this.client.put(`/api/prescriptions/${id}`, data)
+    return this.client.put(`/prescriptions/${id}`, data)
   }
 
   getBills(patientId?: string) {
-    const url = patientId ? `/api/bills?patient_id=${patientId}` : '/api/bills'
+    const url = patientId ? `/bills?patient_id=${patientId}` : '/bills'
     return this.client.get(url)
   }
 
   createBill(data: any) {
-    return this.client.post('/api/bills', data)
+    return this.client.post('/bills', data)
   }
 
   updateBillStatus(id: string, status: string) {
-    return this.client.put(`/api/bills/${id}`, { status })
+    return this.client.put(`/bills/${id}`, { status })
   }
 
   markBillAsPaid(id: string) {
-    return this.client.post(`/api/bills/${id}/mark-paid`)
+    return this.client.post(`/bills/${id}/mark-paid`)
   }
 
   generateReport(data: any) {
-    return this.client.post('/api/reports', data)
+    return this.client.post('/reports', data)
   }
 
   getReports(patientId?: string) {
-    const url = patientId ? `/api/reports?patient_id=${patientId}` : '/api/reports'
+    const url = patientId ? `/reports?patient_id=${patientId}` : '/reports'
     return this.client.get(url)
   }
 
   getAllStaff() {
-    return this.client.get('/api/staff')
+    return this.client.get('/staff')
   }
 
   createStaff(data: any) {
-    return this.client.post('/api/staff', data)
+    return this.client.post('/staff', data)
   }
 
   updateStaff(id: string, data: any) {
-    return this.client.put(`/api/staff/${id}`, data)
+    return this.client.put(`/staff/${id}`, data)
   }
 
   deleteStaff(id: string) {
-    return this.client.delete(`/api/staff/${id}`)
+    return this.client.delete(`/staff/${id}`)
   }
 
   sendEmail(data: { to: string; subject: string; htmlContent: string; textContent?: string }) {
-    return this.client.post('/api/email/send', data)
+    return this.client.post('/email/send', data)
   }
 }
 
