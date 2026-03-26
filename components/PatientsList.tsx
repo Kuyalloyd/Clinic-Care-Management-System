@@ -253,7 +253,7 @@ function PatientForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-gray-900">Add New Patient</h2>
         <button
@@ -265,8 +265,8 @@ function PatientForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
             <input
               type="text"
@@ -276,6 +276,19 @@ function PatientForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+            <select
+              name="gender"
+              value={formData.gender}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+            >
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
@@ -308,19 +321,6 @@ function PatientForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
               max="2020-12-31"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
-            <select
-              name="gender"
-              value={formData.gender}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-            >
-              <option value="M">Male</option>
-              <option value="F">Female</option>
-              <option value="Other">Other</option>
-            </select>
           </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
@@ -577,7 +577,7 @@ function PatientEditForm({ patient, onSuccess, onClose }: { patient: Patient; on
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-gray-900">Edit Patient</h2>
         <button
@@ -589,8 +589,8 @@ function PatientEditForm({ patient, onSuccess, onClose }: { patient: Patient; on
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
             <input
               type="text"
@@ -600,6 +600,19 @@ function PatientEditForm({ patient, onSuccess, onClose }: { patient: Patient; on
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+            <select
+              name="gender"
+              value={formData.gender}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+            >
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
@@ -632,19 +645,6 @@ function PatientEditForm({ patient, onSuccess, onClose }: { patient: Patient; on
               max="2020-12-31"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
-            <select
-              name="gender"
-              value={formData.gender}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-            >
-              <option value="M">Male</option>
-              <option value="F">Female</option>
-              <option value="Other">Other</option>
-            </select>
           </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
