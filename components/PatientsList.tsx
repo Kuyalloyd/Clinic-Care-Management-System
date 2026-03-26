@@ -208,6 +208,7 @@ function PatientForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
     gender: 'M',
     address: '',
     city: '',
+    state: '',
     zip_code: '',
     symptoms: '',
     emergency_contact_name: '',
@@ -234,6 +235,7 @@ function PatientForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
         gender: formData.gender,
         address: formData.address,
         city: formData.city,
+        state: formData.state,
         zip_code: formData.zip_code,
         symptoms: formData.symptoms,
         emergency_contact_name: formData.emergency_contact_name,
@@ -336,6 +338,16 @@ function PatientForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
               type="text"
               name="city"
               value={formData.city}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+            <input
+              type="text"
+              name="state"
+              value={formData.state}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             />
@@ -520,6 +532,7 @@ function PatientEditForm({ patient, onSuccess, onClose }: { patient: Patient; on
     gender: patient.gender || 'M',
     address: patient.address || '',
     city: patient.city || '',
+    state: patient.state || '',
     zip_code: patient.zip_code || '',
     symptoms: patient.symptoms || '',
     emergency_contact_name: patient.emergency_contact_name || '',
@@ -546,6 +559,7 @@ function PatientEditForm({ patient, onSuccess, onClose }: { patient: Patient; on
         gender: formData.gender,
         address: formData.address,
         city: formData.city,
+        state: formData.state,
         zip_code: formData.zip_code,
         symptoms: formData.symptoms,
         emergency_contact_name: formData.emergency_contact_name,
@@ -648,6 +662,16 @@ function PatientEditForm({ patient, onSuccess, onClose }: { patient: Patient; on
               type="text"
               name="city"
               value={formData.city}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+            <input
+              type="text"
+              name="state"
+              value={formData.state}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             />

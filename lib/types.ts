@@ -13,6 +13,8 @@ export interface Patient {
   email: string
   full_name: string
   date_of_birth: string
+  birth_year?: number
+  age?: number
   gender: 'M' | 'F' | 'Other'
   phone: string
   address: string
