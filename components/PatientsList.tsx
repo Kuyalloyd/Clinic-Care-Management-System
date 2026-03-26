@@ -343,7 +343,7 @@ function PatientForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Region</label>
             <input
               type="text"
               name="region"
@@ -478,7 +478,7 @@ function PatientViewModal({ patientId, onClose }: { patientId: string; onClose: 
             <p className="text-gray-900">{patient.city || '-'}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
             <p className="text-gray-900">{patient.region || '-'}</p>
           </div>
           <div>
@@ -667,7 +667,7 @@ function PatientEditForm({ patient, onSuccess, onClose }: { patient: Patient; on
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Region</label>
             <input
               type="text"
               name="region"
