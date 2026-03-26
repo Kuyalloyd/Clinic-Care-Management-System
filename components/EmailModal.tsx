@@ -34,13 +34,26 @@ export default function EmailModal({
     setLoading(true)
     setError('')
     try {
+      console.log('📧 EmailModal: Sending email to:', patientEmail)
       await onSend(subject, message)
+      console.log('✅ EmailModal: Email sent successfully')
       setSuccess(true)
       setTimeout(() => {
         onClose()
       }, 2000)
     } catch (err: any) {
-      setError(err.message || 'Failed to send email')
+      console.error('❌ EmailModal: Send error:', err)
+      const errorMsg = err.message || 'Failed to send email'
+      
+      // Provide specific guidance based on error
+      let displayError = errorMsg
+      if (errorMsg.includes('500')) {
+        displayError = 'Email service error. Please try again or contact support.'
+      } else if (errorMsg.includes('Gmail')) {
+        displayError = 'Gmail configuration issue. Please contact administrator.'
+      }
+      
+      setError(displayError)
     } finally {
       setLoading(false)
     }

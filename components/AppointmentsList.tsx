@@ -221,10 +221,10 @@ export default function AppointmentsList() {
                       </div>
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => setEditingId(apt.id)}
-                        className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm font-medium transition"
+                        className="flex-1 min-w-[80px] px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-xs sm:text-sm font-medium transition"
                       >
                         Edit
                       </button>
@@ -234,24 +234,24 @@ export default function AppointmentsList() {
                             setSelectedAppointment(apt)
                             setShowEmailModal(true)
                           }}
-                          className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm font-medium transition flex items-center justify-center gap-1"
+                          className="flex-1 min-w-[75px] px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-xs sm:text-sm font-medium transition flex items-center justify-center gap-1"
                         >
                           <Mail size={14} />
-                          Email
+                          <span>Email</span>
                         </button>
                       )}
                       <button
                         onClick={() => setStatusChangeId(apt.id)}
-                        className="flex-1 px-3 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 text-sm font-medium transition"
+                        className="flex-1 min-w-[90px] px-2 sm:px-3 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 text-xs sm:text-sm font-medium transition"
                       >
-                        Change Status
+                        Status
                       </button>
                       <button
                         onClick={() => setShowDeleteModal(apt.id)}
-                        className="flex-1 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm font-medium transition flex items-center justify-center gap-1"
+                        className="flex-1 min-w-[75px] px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-xs sm:text-sm font-medium transition flex items-center justify-center gap-1"
                       >
                         <Trash2 size={14} />
-                        Delete
+                        <span>Delete</span>
                       </button>
                     </div>
                   </div>
