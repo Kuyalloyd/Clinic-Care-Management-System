@@ -4,17 +4,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
-}
+// Handle missing environment variables gracefully during build
+const url = supabaseUrl || 'https://placeholder.supabase.co'
+const anonKey = supabaseAnonKey || 'placeholder-key'
 
-if (!supabaseServiceKey) {
-  console.warn('⚠️ Warning: SUPABASE_SERVICE_ROLE_KEY not configured. Using anonymous key instead.')
-}
+export const supabase = createClient(url, anonKey)
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey, {
+export const supabaseAdmin = createClient(url, supabaseServiceKey || anonKey, {
   auth: {
     persistSession: false,
     autoRefreshToken: false,
