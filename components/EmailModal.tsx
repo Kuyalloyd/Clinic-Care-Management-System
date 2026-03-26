@@ -66,7 +66,7 @@ export default function EmailModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full space-y-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl w-full space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
             <Mail size={20} className="text-blue-600" />
@@ -82,7 +82,7 @@ export default function EmailModal({
 
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">To:</label>
-          <p className="text-gray-900 font-medium">{patientEmail}</p>
+          <p className="text-gray-900 font-medium break-all">{patientEmail}</p>
         </div>
 
         <div className="space-y-2">
@@ -112,7 +112,7 @@ export default function EmailModal({
           </div>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 pt-4">
           <button
             onClick={onClose}
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"

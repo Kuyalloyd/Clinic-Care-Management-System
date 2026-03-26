@@ -21,18 +21,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('📧 Sending email to:', to)
+    console.log('📧 Email API Route: Sending email to:', to)
+    console.log('📧 Subject:', subject)
+    
     const result = await sendEmailViaGmail(to, subject, htmlContent, textContent)
 
     if (!result.success) {
-      console.error('Email send failed:', result.error)
+      console.error('❌ Email API Route: Send failed:', result.error)
       return NextResponse.json(
         { error: result.error || 'Failed to send email' },
         { status: 500 }
       )
     }
 
-    console.log('✅ Email sent successfully')
+    console.log('✅ Email API Route: Email sent successfully')
     return NextResponse.json({
       success: true,
       message: 'Email sent successfully',
@@ -42,7 +44,9 @@ export async function POST(request: NextRequest) {
       status: 'sent',
     })
   } catch (error: any) {
-    console.error('Failed to send email:', error)
+    console.error('❌ Email API Route: Unexpected error:', error)
+    console.error('Error message:', error.message)
+    console.error('Error stack:', error.stack)
     return NextResponse.json(
       { error: error.message || 'Failed to send email' },
       { status: 500 }

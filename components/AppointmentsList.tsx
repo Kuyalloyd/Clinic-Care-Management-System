@@ -426,7 +426,7 @@ function AppointmentForm({
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Schedule New Appointment</h2>
         <button
@@ -445,7 +445,7 @@ function AppointmentForm({
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
+          <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">Patient <span className="text-red-500">*</span></label>
             <select
               name="patient_id"
@@ -604,7 +604,7 @@ function AssignDoctorForm({
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+    <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Assign Doctor/Nurse</h2>
         <button
@@ -729,7 +729,7 @@ function ChangeStatusForm({
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+    <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Change Status</h2>
         <button
@@ -764,7 +764,7 @@ function ChangeStatusForm({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">Update Status</label>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-48 overflow-y-auto">
             {['scheduled', 'completed', 'no-show', 'cancelled'].map((status) => (
               <label key={status} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition">
                 <input
@@ -776,7 +776,7 @@ function ChangeStatusForm({
                   className="w-4 h-4 text-blue-600"
                 />
                 <div className="flex-1">
-                  <span className="font-medium text-gray-900">
+                  <span className="font-medium text-gray-900 text-sm">
                     {status === 'scheduled' && 'Scheduled'}
                     {status === 'completed' && 'Completed'}
                     {status === 'no-show' && 'No Show'}
@@ -795,6 +795,14 @@ function ChangeStatusForm({
         </div>
 
         <div className="flex gap-3 pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          >
+            Cancel
+          </button>
           <button
             type="submit"
             disabled={loading || newStatus === appointment.status}
