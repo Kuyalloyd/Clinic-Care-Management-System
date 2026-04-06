@@ -9,8 +9,18 @@ function LoginContent() {
   const message = searchParams.get('message')
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        backgroundImage: 'url(/images/clinic.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
+      {/* Overlay for better readability */}
+      <div className="absolute inset-0 bg-black/40"></div>
+      <div className="w-full max-w-md relative z-10">
         <div className="bg-white rounded-2xl shadow-2xl p-8 space-y-8">
           {/* Header */}
           <div className="space-y-6">
