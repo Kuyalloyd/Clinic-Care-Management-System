@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const staffId = searchParams.get('staff_id')
     const date = searchParams.get('date')
 
-    let query = supabaseAdmin.from('appointments').select('*')
+    let query = supabaseAdmin.from('appointments').select('*').is('archived_at', null)
 
     if (patientId) query = query.eq('patient_id', patientId)
     if (staffId) query = query.eq('staff_id', staffId)
@@ -17,6 +17,24 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query.order('appointment_date', {
       ascending: true,
     })
+
+    if (error && (error.message?.includes('archived_at') || error.code === '42703')) {
+      let fallbackQuery = supabaseAdmin.from('appointments').select('*')
+
+      if (patientId) fallbackQuery = fallbackQuery.eq('patient_id', patientId)
+      if (staffId) fallbackQuery = fallbackQuery.eq('staff_id', staffId)
+      if (date) fallbackQuery = fallbackQuery.eq('appointment_date', date)
+
+      const fallback = await fallbackQuery.order('appointment_date', {
+        ascending: true,
+      })
+
+      if (fallback.error) {
+        return NextResponse.json({ error: fallback.error.message }, { status: 400 })
+      }
+
+      return NextResponse.json(fallback.data)
+    }
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 })

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
+import { archiveAndDeleteById } from '@/lib/archive'
 
 export async function GET(
   request: NextRequest,
@@ -90,17 +91,14 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    
-    const { error } = await supabaseAdmin
-      .from('appointments')
-      .delete()
-      .eq('id', id)
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 })
+    const archived = await archiveAndDeleteById(supabaseAdmin, 'appointments', id)
+    if (!archived.success) {
+      const err = archived.error?.message || 'Failed to archive appointment'
+      return NextResponse.json({ error: err }, { status: 400 })
     }
 
-    return NextResponse.json({ message: 'Appointment deleted' })
+    return NextResponse.json({ message: 'Appointment moved to archive' })
   } catch (error) {
     return NextResponse.json(
       { error: 'Internal server error' },

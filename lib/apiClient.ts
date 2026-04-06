@@ -133,6 +133,18 @@ class APIClient {
   sendEmail(data: { to: string; subject: string; htmlContent: string; textContent?: string }) {
     return this.client.post('/email/send', data)
   }
+
+  getArchived(type: string) {
+    return this.client.get(`/archive?type=${type}`)
+  }
+
+  restoreArchived(id: string, type: string) {
+    return this.client.post(`/archive/${id}`, { type })
+  }
+
+  deleteArchived(id: string, type: string) {
+    return this.client.delete(`/archive/${id}`, { data: { type } })
+  }
 }
 
 export const apiClient = new APIClient()

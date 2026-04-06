@@ -6,7 +6,21 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabaseAdmin
       .from('patients')
       .select('*')
+      .is('archived_at', null)
       .order('created_at', { ascending: false })
+
+    if (error && (error.message?.includes('archived_at') || error.code === '42703')) {
+      const fallback = await supabaseAdmin
+        .from('patients')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (fallback.error) {
+        return NextResponse.json({ error: fallback.error.message }, { status: 400 })
+      }
+
+      return NextResponse.json(fallback.data)
+    }
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 })

@@ -16,8 +16,14 @@ export default function PatientsList() {
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null)
 
   useEffect(() => {
-    setLoading(false)
-  }, [])
+    const loadPatients = async () => {
+      setLoading(true)
+      await refreshPatients()
+      setLoading(false)
+    }
+
+    loadPatients()
+  }, [refreshPatients])
 
   const calculateAge = (dateOfBirth: string) => {
     if (!dateOfBirth) return '-'
@@ -36,8 +42,10 @@ export default function PatientsList() {
       try {
         await apiClient.deletePatient(id)
         refreshPatients()
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to delete patient:', error)
+        const msg = error?.response?.data?.error || error?.message || 'Failed to delete patient'
+        alert(msg)
       }
     }
   }

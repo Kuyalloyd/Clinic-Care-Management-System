@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { archiveAndDeleteById } from '@/lib/archive'
 
 export async function PUT(
   request: NextRequest,
@@ -50,16 +51,13 @@ export async function DELETE(
   try {
     const { id } = await params
 
-    const { error } = await supabaseAdmin
-      .from('staff')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 })
+    const archived = await archiveAndDeleteById(supabaseAdmin, 'staff', id)
+    if (!archived.success) {
+      const err = archived.error?.message || 'Failed to archive staff member'
+      return NextResponse.json({ error: err }, { status: 400 })
     }
 
-    return NextResponse.json({ message: 'Staff deleted' }, { status: 200 })
+    return NextResponse.json({ message: 'Staff moved to archive' }, { status: 200 })
   } catch (error) {
     return NextResponse.json(
       { error: 'Internal server error' },

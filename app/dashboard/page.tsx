@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Menu, LogOut, Home, Users, Calendar, Pill, DollarSign, FileText, BarChart3, TrendingUp } from 'lucide-react'
+import { Menu, LogOut, Home, Users, Calendar, Pill, DollarSign, FileText, BarChart3, TrendingUp, Archive } from 'lucide-react'
 import { useDashboardData } from '@/lib/DataContext'
 import PatientsList from '@/components/PatientsList'
 import AppointmentsList from '@/components/AppointmentsList'
@@ -11,8 +11,9 @@ import PrescriptionsList from '@/components/PrescriptionsList'
 import BillingList from '@/components/BillingList'
 import ReportsList from '@/components/ReportsList'
 import StaffList from '@/components/StaffList'
+import ArchiveComponent from '@/components/ArchiveComponent'
 
-type TabType = 'overview' | 'patients' | 'appointments' | 'prescriptions' | 'billing' | 'reports' | 'staff'
+type TabType = 'overview' | 'patients' | 'appointments' | 'prescriptions' | 'billing' | 'reports' | 'staff' | 'archive'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -64,6 +65,7 @@ export default function DashboardPage() {
     { id: 'billing', label: 'Billing', icon: DollarSign },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'staff', label: 'Staff', icon: Users },
+    { id: 'archive', label: 'Archive', icon: Archive },
   ]
 
   return (
@@ -335,6 +337,7 @@ export default function DashboardPage() {
           {activeTab === 'billing' && <BillingList />}
           {activeTab === 'reports' && <ReportsList />}
           {activeTab === 'staff' && <StaffList />}
+          {activeTab === 'archive' && <ArchiveComponent />}
         </main>
       </div>
 
