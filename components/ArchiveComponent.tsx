@@ -5,7 +5,7 @@ import { apiClient } from '@/lib/apiClient'
 import { RotateCcw, Trash2, Archive, FolderOpen } from 'lucide-react'
 
 export default function ArchiveComponent() {
-  const [archiveType, setArchiveType] = useState<'patients' | 'appointments' | 'prescriptions' | 'bills' | 'reports' | 'staff'>('patients')
+  const [archiveType, setArchiveType] = useState<'patients' | 'appointments' | 'prescriptions' | 'staff'>('patients')
   const [archivedItems, setArchivedItems] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [restoring, setRestoring] = useState<string | null>(null)
@@ -14,8 +14,6 @@ export default function ArchiveComponent() {
     { id: 'patients', label: 'Patients' },
     { id: 'appointments', label: 'Appointments' },
     { id: 'prescriptions', label: 'Prescriptions' },
-    { id: 'bills', label: 'Billing' },
-    { id: 'reports', label: 'Reports' },
     { id: 'staff', label: 'Staff' },
   ]
 
@@ -39,10 +37,11 @@ export default function ArchiveComponent() {
     setRestoring(id)
     try {
       await apiClient.restoreArchived(id, archiveType)
-      setArchivedItems(archivedItems.filter(item => item.id !== id))
+      setArchivedItems(currentItems => currentItems.filter(item => item.id !== id))
       alert(`Item restored successfully!`)
     } catch (error: any) {
-      alert(`Failed to restore: ${error.message}`)
+      const message = error.response?.data?.error?.message || error.response?.data?.error || error.message
+      alert(`Failed to restore: ${message}`)
     } finally {
       setRestoring(null)
     }
@@ -53,10 +52,11 @@ export default function ArchiveComponent() {
 
     try {
       await apiClient.deleteArchived(id, archiveType)
-      setArchivedItems(archivedItems.filter(item => item.id !== id))
+      setArchivedItems(currentItems => currentItems.filter(item => item.id !== id))
       alert('Item permanently deleted')
     } catch (error: any) {
-      alert(`Failed to delete: ${error.message}`)
+      const message = error.response?.data?.error?.message || error.response?.data?.error || error.message
+      alert(`Failed to delete: ${message}`)
     }
   }
 
@@ -69,10 +69,6 @@ export default function ArchiveComponent() {
         return `Appointment on ${record.appointment_date || 'Unknown date'}`
       case 'prescriptions':
         return `Prescription - ${record.medications || record.notes || 'No details'}`
-      case 'bills':
-        return `Bill - Amount: ${record.amount || 0}`
-      case 'reports':
-        return `Report - ${record.report_type || record.title || 'No type'}`
       case 'staff':
         return `${record.full_name || 'Unknown'} (${record.role || 'No role'})`
       default:
