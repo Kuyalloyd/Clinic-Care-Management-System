@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { apiClient } from '@/lib/apiClient'
 import { useDashboardData } from '@/lib/DataContext'
 import { Appointment, Patient, Staff } from '@/lib/types'
-import { Plus, Calendar, Clock, User, Mail, Edit2, Trash2, Search } from 'lucide-react'
+import { Plus, Calendar, Clock, User, Mail, Trash2, Search } from 'lucide-react'
 import EmailModal from './EmailModal'
 
 export default function AppointmentsList() {
@@ -19,10 +19,18 @@ export default function AppointmentsList() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [currentRole, setCurrentRole] = useState<string>('')
 
   useEffect(() => {
+    const email = localStorage.getItem('user_email') || ''
+    const staffMember = data.staff.find((s) => s.email?.toLowerCase() === email.toLowerCase())
+    setCurrentRole(staffMember?.role || '')
     setLoading(false)
-  }, [])
+  }, [data.staff])
+
+  const canCreateAppointments = currentRole === 'admin'
+  const canAssignStaff = currentRole === 'admin'
+  const canDeleteAppointments = currentRole === 'admin'
 
   const getPatientName = (patientId: string) => {
     return data.patients.find((p) => p.id === patientId)?.full_name || 'Unknown'
@@ -115,19 +123,22 @@ export default function AppointmentsList() {
           <h2 className="text-2xl font-bold text-gray-900 mb-1">Appointments</h2>
           <p className="text-gray-600 text-sm">Manage clinic appointments and schedules</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="btn-primary btn-lg w-full sm:w-auto"
-        >
-          <Plus size={20} />
-          New Appointment
-        </button>
+        {canCreateAppointments && (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="btn-primary btn-lg w-full sm:w-auto"
+          >
+            <Plus size={20} />
+            New Appointment
+          </button>
+        )}
       </div>
 
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <AppointmentForm
             patients={data.patients}
+            staff={data.staff}
             onSuccess={() => {
               setShowForm(false)
               setTimeout(() => {
@@ -222,12 +233,14 @@ export default function AppointmentsList() {
                     )}
 
                     <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => setEditingId(apt.id)}
-                        className="flex-1 min-w-[80px] px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-xs sm:text-sm font-medium transition"
-                      >
-                        Edit
-                      </button>
+                      {canAssignStaff && (
+                        <button
+                          onClick={() => setEditingId(apt.id)}
+                          className="flex-1 min-w-[80px] px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-xs sm:text-sm font-medium transition"
+                        >
+                          Edit
+                        </button>
+                      )}
                       {patient && patient.email && apt.status === 'scheduled' && (
                         <button
                           onClick={() => {
@@ -246,13 +259,15 @@ export default function AppointmentsList() {
                       >
                         Status
                       </button>
-                      <button
-                        onClick={() => setShowDeleteModal(apt.id)}
-                        className="flex-1 min-w-[75px] px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-xs sm:text-sm font-medium transition flex items-center justify-center gap-1"
-                      >
-                        <Trash2 size={14} />
-                        <span>Delete</span>
-                      </button>
+                      {canDeleteAppointments && (
+                        <button
+                          onClick={() => setShowDeleteModal(apt.id)}
+                          className="flex-1 min-w-[75px] px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-xs sm:text-sm font-medium transition flex items-center justify-center gap-1"
+                        >
+                          <Trash2 size={14} />
+                          <span>Delete</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 )
@@ -289,7 +304,7 @@ export default function AppointmentsList() {
         />
       )}
 
-      {editingId && (
+      {editingId && canAssignStaff && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <AssignDoctorForm
             appointment={data.appointments.find(a => a.id === editingId)!}
@@ -315,7 +330,7 @@ export default function AppointmentsList() {
         </div>
       )}
 
-      {showDeleteModal && (
+      {showDeleteModal && canDeleteAppointments && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Delete Appointment</h3>
@@ -351,10 +366,12 @@ export default function AppointmentsList() {
 
 function AppointmentForm({
   patients,
+  staff,
   onSuccess,
   onClose,
 }: {
   patients: Patient[]
+  staff: Staff[]
   onSuccess: () => void
   onClose: () => void
 }) {
@@ -368,6 +385,8 @@ function AppointmentForm({
     reason: '',
     status: 'scheduled',
   })
+
+  const assignableStaff = staff.filter((member) => member.role === 'doctor' || member.role === 'nurse')
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -494,6 +513,22 @@ function AppointmentForm({
               rows={3}
             />
           </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Assign Doctor/Nurse</label>
+            <select
+              name="staff_id"
+              value={formData.staff_id}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 bg-white"
+            >
+              <option value="">-- Unassigned --</option>
+              {assignableStaff.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.full_name} ({member.role})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="flex gap-3 justify-end pt-6">
@@ -559,7 +594,7 @@ function AssignDoctorForm({
         setStaff([])
       } else if (Array.isArray(response.data)) {
         console.log('✅ Staff data is array, setting:', response.data)
-        setStaff(response.data.filter(s => s.role !== 'admin'))
+        setStaff(response.data.filter(s => s.role === 'doctor' || s.role === 'nurse'))
       } else {
         console.warn('⚠️ Staff data is not array, received:', typeof response.data)
         setStaff([])

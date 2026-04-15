@@ -3,12 +3,15 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/apiClient'
-import { Mail, Lock } from 'lucide-react'
+import BrandLoadingOverlay from '@/components/BrandLoadingOverlay'
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
 export default function LoginForm() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -25,19 +28,27 @@ export default function LoginForm() {
     setLoading(true)
 
     try {
-      const response = await apiClient.login(formData.email, formData.password)
+      setIsLoggingIn(true)
+      const email = formData.email.trim().toLowerCase()
+      const response = await apiClient.login(email, formData.password)
       localStorage.setItem('auth_token', response.data.session.access_token)
+      localStorage.setItem('user_id', response.data.user.id)
       localStorage.setItem('user_email', response.data.user.email)
       router.push('/dashboard')
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed')
+      setIsLoggingIn(false)
+      if (!err.response) {
+        setError('Cannot connect to server. Please make sure the app is running (npm run dev).')
+      } else {
+        setError(err.response?.data?.error || err.message || 'Login failed')
+      }
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full relative">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="form-group">
           <label className="label">
@@ -64,14 +75,22 @@ export default function LoginForm() {
           <div className="relative">
             <Lock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               name="password"
               value={formData.password}
               onChange={handleChange}
               placeholder="••••••••"
               required
-              className="input pl-10"
+              className="input pl-10 pr-10"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3 top-3 h-6 w-6 text-gray-400 hover:text-gray-600"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
           </div>
         </div>
 
@@ -86,9 +105,16 @@ export default function LoginForm() {
           disabled={loading}
           className="btn-primary w-full btn-lg font-semibold shadow-md disabled:opacity-50"
         >
-          {loading ? 'Signing In...' : 'Sign In'}
+          {loading ? 'Logging in...' : 'Sign In'}
         </button>
       </form>
+
+      {isLoggingIn && (
+        <BrandLoadingOverlay
+          title="Signing you in"
+          subtitle="Preparing your dashboard"
+        />
+      )}
     </div>
   )
 }

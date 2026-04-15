@@ -1,12 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
+import { getRequestAuth, requireRole } from '@/lib/auth'
 
 export async function DELETE(request: NextRequest, props: any) {
   try {
+    const { auth, errorResponse } = await getRequestAuth(request)
+    if (errorResponse || !auth) return errorResponse!
+
     const reportId = props.params.id
 
-    const { error } = await supabase
-      .from('medical_reports')
+    if (auth.role === 'doctor' || auth.role === 'nurse') {
+      const { data: existing, error: existingError } = await supabaseAdmin
+        .from('reports')
+        .select('id, staff_id')
+        .eq('id', reportId)
+        .single()
+
+      if (existingError || !existing) {
+        return NextResponse.json({ error: existingError?.message || 'Report not found' }, { status: 404 })
+      }
+
+      if (existing.staff_id !== auth.staffId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    } else {
+      const roleError = requireRole(auth, ['admin'])
+      if (roleError) return roleError
+    }
+
+    const { error } = await supabaseAdmin
+      .from('reports')
       .delete()
       .eq('id', reportId)
 

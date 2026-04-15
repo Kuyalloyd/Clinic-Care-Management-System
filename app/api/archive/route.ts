@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { getRequestAuth, requireRole } from '@/lib/auth'
 
 const ALLOWED_TYPES = ['patients', 'appointments', 'prescriptions', 'bills', 'reports', 'staff']
 const TYPE_TO_TABLE: Record<string, string> = {
@@ -13,6 +14,11 @@ const TYPE_TO_TABLE: Record<string, string> = {
 
 export async function GET(request: NextRequest) {
   try {
+    const { auth, errorResponse } = await getRequestAuth(request)
+    if (errorResponse || !auth) return errorResponse!
+    const roleError = requireRole(auth, ['admin'])
+    if (roleError) return roleError
+
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type') // 'patients', 'appointments', 'prescriptions', 'bills', 'reports'
 

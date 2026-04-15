@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabase, supabaseAdmin } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
 
@@ -31,6 +31,19 @@ export async function POST(request: NextRequest) {
         secure: process.env.NODE_ENV === 'production',
         maxAge: 604800,
       })
+    }
+
+    const staffLookup = await supabaseAdmin
+      .from('staff')
+      .select('id')
+      .or(`id.eq.${data.user.id},email.eq.${(data.user.email || '').toLowerCase()}`)
+      .maybeSingle()
+
+    if (staffLookup.data?.id) {
+      await supabaseAdmin
+        .from('staff')
+        .update({ is_on_duty: true })
+        .eq('id', staffLookup.data.id)
     }
 
     return response

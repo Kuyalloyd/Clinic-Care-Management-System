@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { archiveAndDeleteById } from '@/lib/archive'
+import { getRequestAuth, requireRole } from '@/lib/auth'
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { auth, errorResponse } = await getRequestAuth(request)
+    if (errorResponse || !auth) return errorResponse!
+    const roleError = requireRole(auth, ['admin'])
+    if (roleError) return roleError
+
     const body = await request.json()
     const { id } = await params
 
@@ -26,7 +32,7 @@ export async function PUT(
       .from('staff')
       .update(body)
       .eq('id', id)
-      .select('id, email, full_name, role, phone, specialty, created_at')
+      .select('id, email, full_name, role, phone, specialty, is_on_duty, created_at')
 
     if (error) {
       console.error('❌ Update failed:', error.message)
@@ -49,6 +55,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { auth, errorResponse } = await getRequestAuth(request)
+    if (errorResponse || !auth) return errorResponse!
+    const roleError = requireRole(auth, ['admin'])
+    if (roleError) return roleError
+
     const { id } = await params
 
     const archived = await archiveAndDeleteById(supabaseAdmin, 'staff', id)

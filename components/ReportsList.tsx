@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { apiClient } from '@/lib/apiClient'
-import { Patient, Appointment, Bill } from '@/lib/types'
+import { Patient, Appointment } from '@/lib/types'
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Download } from 'lucide-react'
 
 export default function ReportsPage() {
   const [patients, setPatients] = useState<Patient[]>([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [bills, setBills] = useState<Bill[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -18,14 +17,12 @@ export default function ReportsPage() {
 
   const fetchData = async () => {
     try {
-      const [patientsRes, appointmentsRes, billsRes] = await Promise.all([
+      const [patientsRes, appointmentsRes] = await Promise.all([
         apiClient.getAllPatients(),
         apiClient.getAllAppointments(),
-        apiClient.getBills(),
       ])
       setPatients(patientsRes.data)
       setAppointments(appointmentsRes.data)
-      setBills(billsRes.data)
     } catch (error) {
       console.error('Failed to fetch report data:', error)
     } finally {
@@ -33,36 +30,29 @@ export default function ReportsPage() {
     }
   }
 
-  const monthlyRevenue = bills.reduce((sum, bill) => sum + (bill.status === 'paid' ? bill.amount : 0), 0)
   const totalPatients = patients.length
   const monthlyAppointments = appointments.filter(apt => {
     const aptDate = new Date(apt.appointment_date)
     const now = new Date()
     return aptDate.getMonth() === now.getMonth() && aptDate.getFullYear() === now.getFullYear()
   }).length
-  const avgPerPatient = totalPatients > 0 ? Math.round(monthlyRevenue / totalPatients) : 0
+  const completedAppointments = appointments.filter((apt) => apt.status === 'completed').length
 
-  const monthlyRevenueData = (() => {
-    const monthlyData: any = {}
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    
-    bills.forEach(bill => {
-      if (bill.created_at) {
-        const date = new Date(bill.created_at)
-        const monthIndex = date.getMonth()
-        const month = monthNames[monthIndex]
-        if (!monthlyData[month]) {
-          monthlyData[month] = 0
-        }
-        if (bill.status === 'paid') {
-          monthlyData[month] += bill.amount
-        }
-      }
+  const monthlyCompletedVisitsData = (() => {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
+    const monthlyData: Record<string, number> = {}
+
+    appointments.forEach((apt) => {
+      if (apt.status !== 'completed' || !apt.appointment_date) return
+      const date = new Date(apt.appointment_date)
+      const month = monthNames[date.getMonth()]
+      if (!month) return
+      monthlyData[month] = (monthlyData[month] || 0) + 1
     })
-    
-    return monthNames.slice(0, 6).map(month => ({
+
+    return monthNames.map((month) => ({
       month,
-      'Revenue (₱)': monthlyData[month] || 0,
+      Completed: monthlyData[month] || 0,
     }))
   })()
 
@@ -104,10 +94,9 @@ export default function ReportsPage() {
   const handleExport = () => {
     const reportData = {
       'Report Date': new Date().toLocaleDateString(),
-      'Monthly Revenue': `₱${monthlyRevenue.toLocaleString()}`,
       'Total Patients': totalPatients,
       'Monthly Appointments': monthlyAppointments,
-      'Average Per Patient': `₱${avgPerPatient.toLocaleString()}`,
+      'Completed Appointments': completedAppointments,
     }
 
     const csvContent = [
@@ -115,9 +104,9 @@ export default function ReportsPage() {
       [],
       ...Object.entries(reportData).map(([key, value]) => [key, value]),
       [],
-      ['Monthly Revenue Data'],
-      ['Month', 'Revenue (₱)'],
-      ...monthlyRevenueData.map(item => [item.month, item['Revenue (₱)']]),
+      ['Monthly Completed Visits Data'],
+      ['Month', 'Completed'],
+      ...monthlyCompletedVisitsData.map(item => [item.month, item.Completed]),
       [],
       ['Patient Visits Data'],
       ['Month', 'Visits'],
@@ -145,7 +134,7 @@ export default function ReportsPage() {
     return <div className="text-center py-8">Loading reports...</div>
   }
 
-  const hasData = patients.length > 0 || appointments.length > 0 || bills.length > 0
+  const hasData = patients.length > 0 || appointments.length > 0
 
   if (!hasData) {
     return (
@@ -156,7 +145,7 @@ export default function ReportsPage() {
         </div>
         <div className="bg-white rounded-lg shadow p-12 border border-gray-200 text-center">
           <p className="text-gray-500 text-xl mb-4">This table is empty</p>
-          <p className="text-gray-400 text-sm mb-6">No data available. Start by adding patients, appointments, or bills.</p>
+          <p className="text-gray-400 text-sm mb-6">No data available. Start by adding patients or appointments.</p>
           <div className="inline-block px-6 py-3 bg-gray-50 rounded-lg border border-gray-200">
             <p className="text-gray-600 text-sm">📊 Reports will appear here once you have data</p>
           </div>
@@ -180,11 +169,11 @@ export default function ReportsPage() {
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Monthly Revenue */}
+        {/* Completed Appointments */}
         <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-          <p className="text-gray-600 text-sm font-medium mb-2">Monthly Revenue</p>
-          <p className="text-3xl font-bold text-gray-900 mb-2">₱{monthlyRevenue.toLocaleString()}</p>
-          <p className="text-xs text-green-600 font-medium">+12.5% from last month</p>
+          <p className="text-gray-600 text-sm font-medium mb-2">Completed Appointments</p>
+          <p className="text-3xl font-bold text-gray-900 mb-2">{completedAppointments}</p>
+          <p className="text-xs text-gray-500 font-medium">Resolved student visits</p>
         </div>
 
         {/* Total Patients */}
@@ -204,11 +193,11 @@ export default function ReportsPage() {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Monthly Revenue Chart */}
+        {/* Monthly Completed Visits Chart */}
         <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Revenue</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Completed Visits</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={monthlyRevenueData}>
+            <BarChart data={monthlyCompletedVisitsData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="month" stroke="#6b7280" />
               <YAxis stroke="#6b7280" />
@@ -220,7 +209,7 @@ export default function ReportsPage() {
                 }}
               />
               <Legend />
-              <Bar dataKey="Revenue (₱)" fill="#3B82F6" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="Completed" fill="#3B82F6" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

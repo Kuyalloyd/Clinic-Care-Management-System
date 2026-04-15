@@ -17,10 +17,16 @@ export default function PrescriptionsList() {
   const [showAssignModal, setShowAssignModal] = useState<string | null>(null)
   const [selectedStaffId, setSelectedStaffId] = useState<string>('')
   const [assigning, setAssigning] = useState(false)
+  const [currentRole, setCurrentRole] = useState<string>('')
+  const [togglingRxId, setTogglingRxId] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'done'>('all')
 
   useEffect(() => {
+    const email = localStorage.getItem('user_email') || ''
+    const staffMember = data.staff.find((s) => s.email?.toLowerCase() === email.toLowerCase())
+    setCurrentRole(staffMember?.role || '')
     setLoading(false)
-  }, [])
+  }, [data.staff])
 
   const getPatientName = (patientId: string) => {
     return data.patients.find((p) => p.id === patientId)?.full_name || 'Unknown'
@@ -105,6 +111,20 @@ export default function PrescriptionsList() {
     }
   }
 
+  const handleTogglePrescriptionDone = async (rx: Prescription) => {
+    try {
+      setTogglingRxId(rx.id)
+      const nextCompleted = !rx.is_completed
+      await apiClient.updatePrescription(rx.id, { is_completed: nextCompleted })
+      await refreshPrescriptions()
+    } catch (error: any) {
+      const msg = error?.response?.data?.error || error?.message || 'Failed to update prescription status'
+      alert(msg)
+    } finally {
+      setTogglingRxId(null)
+    }
+  }
+
   const groupPrescriptionsByPatient = () => {
     const grouped: { [key: string]: Prescription[] } = {}
     data.prescriptions.forEach((rx) => {
@@ -122,8 +142,16 @@ export default function PrescriptionsList() {
     
     Object.entries(grouped).forEach(([patientId, prescriptions]) => {
       const patientName = getPatientName(patientId).toLowerCase()
+      const statusFilteredPrescriptions = prescriptions.filter((rx) => {
+        if (statusFilter === 'all') return true
+        if (statusFilter === 'done') return rx.is_completed
+        return !rx.is_completed
+      })
+
       if (patientName.includes(searchTerm.toLowerCase())) {
-        filtered[patientId] = prescriptions
+        if (statusFilteredPrescriptions.length > 0) {
+          filtered[patientId] = statusFilteredPrescriptions
+        }
       }
     })
     
@@ -135,6 +163,11 @@ export default function PrescriptionsList() {
   }
 
   const groups = filteredGroups()
+  const canToggleDone = currentRole === 'doctor' || currentRole === 'admin'
+  const canCreatePrescription = currentRole === 'admin'
+  const canAssignStaff = currentRole === 'admin'
+  const canEditPrescription = currentRole === 'admin'
+  const canDeletePrescription = currentRole === 'admin'
 
   return (
     <div className="space-y-6">
@@ -143,13 +176,15 @@ export default function PrescriptionsList() {
           <h2 className="text-2xl font-bold text-gray-900 mb-1">Prescriptions</h2>
           <p className="text-gray-600 text-sm">Manage patient prescriptions and medications</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="btn-primary btn-lg w-full sm:w-auto"
-        >
-          <Plus size={20} />
-          New Prescription
-        </button>
+        {canCreatePrescription && (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="btn-primary btn-lg w-full sm:w-auto"
+          >
+            <Plus size={20} />
+            New Prescription
+          </button>
+        )}
       </div>
 
       {showForm && (
@@ -165,7 +200,7 @@ export default function PrescriptionsList() {
         </div>
       )}
 
-      {editingPrescriptionId && (
+      {editingPrescriptionId && canEditPrescription && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <EditPrescriptionForm
             prescription={data.prescriptions.find(r => r.id === editingPrescriptionId)!}
@@ -181,13 +216,39 @@ export default function PrescriptionsList() {
 
       <div className="card">
         <div className="p-6 border-b border-gray-200">
-          <input
-            type="text"
-            placeholder="Search by patient name or diagnosis..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-          />
+          <div className="space-y-3">
+            <input
+              type="text"
+              placeholder="Search by patient name or diagnosis..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            />
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Filter:</span>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('all')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition ${statusFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('pending')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition ${statusFilter === 'pending' ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                Pending
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('done')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition ${statusFilter === 'done' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                Done
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="p-6 space-y-6">
@@ -214,6 +275,12 @@ export default function PrescriptionsList() {
                       <p className="text-xs text-gray-500 ml-9">
                         {new Date(firstRx.prescribed_date).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                       </p>
+                      {firstRx.updated_at && (
+                        <p className="text-xs text-gray-500 ml-9 mt-1">
+                          Last edited {new Date(firstRx.updated_at).toLocaleString()}
+                          {firstRx.updated_by && currentRole === 'admin' ? ' by admin' : ''}
+                        </p>
+                      )}
                     </div>
                     <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                       Active
@@ -240,6 +307,8 @@ export default function PrescriptionsList() {
                             <th className="text-left py-2 font-medium text-gray-700">Date of Expiry</th>
                             <th className="text-left py-2 font-medium text-gray-700">Deadline</th>
                             <th className="text-left py-2 font-medium text-gray-700">Description</th>
+                            <th className="text-left py-2 font-medium text-gray-700">Status</th>
+                            {canToggleDone && <th className="text-left py-2 font-medium text-gray-700">Action</th>}
                           </tr>
                         </thead>
                         <tbody>
@@ -277,6 +346,23 @@ export default function PrescriptionsList() {
                                 <p className="text-xs text-gray-600 font-medium">Description</p>
                                 <p className="text-sm font-medium text-gray-900">{rx.instructions || '-'}</p>
                               </td>
+                              <td className="py-2">
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${rx.is_completed ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                  {rx.is_completed ? 'Done' : 'Pending'}
+                                </span>
+                              </td>
+                              {canToggleDone && (
+                                <td className="py-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleTogglePrescriptionDone(rx)}
+                                    disabled={togglingRxId === rx.id}
+                                    className={`px-3 py-1 rounded-md text-xs font-medium transition ${rx.is_completed ? 'bg-gray-700 text-white hover:bg-gray-800' : 'bg-green-600 text-white hover:bg-green-700'} disabled:opacity-50`}
+                                  >
+                                    {togglingRxId === rx.id ? 'Saving...' : rx.is_completed ? 'Undo' : 'Mark Done'}
+                                  </button>
+                                </td>
+                              )}
                             </tr>
                             )
                           })}
@@ -398,29 +484,35 @@ export default function PrescriptionsList() {
                       <Printer size={16} />
                       <span>Print</span>
                     </button>
-                    <button 
-                      onClick={() => {
-                        setShowAssignModal(prescriptions[0].id)
-                        setSelectedStaffId(prescriptions[0].staff_id || '')
-                      }}
-                      className="px-2 sm:px-4 py-2 text-purple-600 font-medium hover:text-purple-800 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
-                    >
-                      Assign
-                    </button>
-                    <button 
-                      onClick={() => setEditingPrescriptionId(prescriptions[0].id)}
-                      className="px-2 sm:px-4 py-2 text-blue-600 font-medium hover:text-blue-800 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
-                    >
-                      <Edit2 size={16} />
-                      <span>Edit</span>
-                    </button>
-                    <button 
-                      onClick={() => setShowDeleteModal(prescriptions[0].id)}
-                      className="px-2 sm:px-4 py-2 text-red-600 font-medium hover:text-red-800 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
-                    >
-                      <Trash2 size={16} />
-                      <span>Delete</span>
-                    </button>
+                    {canAssignStaff && (
+                      <button 
+                        onClick={() => {
+                          setShowAssignModal(prescriptions[0].id)
+                          setSelectedStaffId(prescriptions[0].staff_id || '')
+                        }}
+                        className="px-2 sm:px-4 py-2 text-purple-600 font-medium hover:text-purple-800 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
+                      >
+                        Assign
+                      </button>
+                    )}
+                    {canEditPrescription && (
+                      <button 
+                        onClick={() => setEditingPrescriptionId(prescriptions[0].id)}
+                        className="px-2 sm:px-4 py-2 text-blue-600 font-medium hover:text-blue-800 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
+                      >
+                        <Edit2 size={16} />
+                        <span>Edit</span>
+                      </button>
+                    )}
+                    {canDeletePrescription && (
+                      <button 
+                        onClick={() => setShowDeleteModal(prescriptions[0].id)}
+                        className="px-2 sm:px-4 py-2 text-red-600 font-medium hover:text-red-800 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
+                      >
+                        <Trash2 size={16} />
+                        <span>Delete</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               )
@@ -429,7 +521,7 @@ export default function PrescriptionsList() {
         </div>
       </div>
 
-          {showAssignModal && (
+          {showAssignModal && canAssignStaff && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Assign Doctor/Nurse</h3>
@@ -474,7 +566,7 @@ export default function PrescriptionsList() {
         </div>
       )}
 
-      {showDeleteModal && (
+      {showDeleteModal && canDeletePrescription && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Delete Prescription</h3>

@@ -1,19 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { archiveAndDeleteById } from '@/lib/archive'
+import { getRequestAuth, requireRole } from '@/lib/auth'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { auth, errorResponse } = await getRequestAuth(request)
+    if (errorResponse || !auth) return errorResponse!
+
     const { id } = await params
 
-    const { data, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('appointments')
       .select('*')
       .eq('id', id)
-      .single()
+
+    if (auth.role === 'doctor' || auth.role === 'nurse') {
+      query = query.eq('staff_id', auth.staffId)
+    }
+
+    const { data, error } = await query.single()
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 })
@@ -33,6 +42,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { auth, errorResponse } = await getRequestAuth(request)
+    if (errorResponse || !auth) return errorResponse!
+
     const { id } = await params
     const body = await request.json()
 
@@ -52,6 +64,30 @@ export async function PUT(
     }
     if (body.hasOwnProperty('staff_id')) {
       updateData.staff_id = body.staff_id || null
+    }
+
+    if (auth.role === 'doctor' || auth.role === 'nurse') {
+      const { data: existing, error: existingError } = await supabaseAdmin
+        .from('appointments')
+        .select('id, staff_id')
+        .eq('id', id)
+        .single()
+
+      if (existingError || !existing) {
+        return NextResponse.json({ error: existingError?.message || 'Appointment not found' }, { status: 404 })
+      }
+
+      if (existing.staff_id !== auth.staffId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
+      // Doctor/nurse can update status and notes-like fields, but cannot reassign or reschedule.
+      delete updateData.staff_id
+      delete updateData.appointment_date
+      delete updateData.appointment_time
+    } else {
+      const roleError = requireRole(auth, ['admin'])
+      if (roleError) return roleError
     }
 
     console.log('📝 Updating appointment:', { id, updateData })
@@ -90,6 +126,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { auth, errorResponse } = await getRequestAuth(request)
+    if (errorResponse || !auth) return errorResponse!
+    const roleError = requireRole(auth, ['admin'])
+    if (roleError) return roleError
+
     const { id } = await params
 
     const archived = await archiveAndDeleteById(supabaseAdmin, 'appointments', id)

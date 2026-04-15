@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { archiveAndDeleteById } from '@/lib/archive'
+import { getRequestAuth, requireRole } from '@/lib/auth'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { auth, errorResponse } = await getRequestAuth(request)
+    if (errorResponse || !auth) return errorResponse!
+
     const { id } = await params
     
     const { data, error } = await supabaseAdmin
@@ -48,6 +52,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { auth, errorResponse } = await getRequestAuth(request)
+    if (errorResponse || !auth) return errorResponse!
+      const roleError = requireRole(auth, ['admin'])
+    if (roleError) return roleError
+
     const { id } = await params
     const body = await request.json()
 
@@ -96,6 +105,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { auth, errorResponse } = await getRequestAuth(request)
+    if (errorResponse || !auth) return errorResponse!
+    const roleError = requireRole(auth, ['admin'])
+    if (roleError) return roleError
+
     const { id } = await params
 
     const archived = await archiveAndDeleteById(supabaseAdmin, 'patients', id)

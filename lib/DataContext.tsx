@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
-import { Appointment, Patient, Prescription, Bill, Staff } from './types'
+import { Appointment, Patient, Prescription, Bill, Staff, DutyAssignment } from './types'
 import { apiClient } from './apiClient'
 
 interface DashboardData {
@@ -10,6 +10,7 @@ interface DashboardData {
   prescriptions: Prescription[]
   bills: Bill[]
   staff: Staff[]
+  dutyAssignments: DutyAssignment[]
 }
 
 interface DataContextType {
@@ -20,6 +21,7 @@ interface DataContextType {
   refreshPrescriptions: () => Promise<void>
   refreshBills: () => Promise<void>
   refreshStaff: () => Promise<void>
+  refreshDutyAssignments: () => Promise<void>
   refreshAll: () => Promise<void>
 }
 
@@ -32,6 +34,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     prescriptions: [],
     bills: [],
     staff: [],
+    dutyAssignments: [],
   })
   const [loading, setLoading] = useState(true)
 
@@ -63,12 +66,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const refreshBills = useCallback(async () => {
-    try {
-      const response = await apiClient.getBills()
-      setData((prev) => ({ ...prev, bills: response.data || [] }))
-    } catch (error) {
-      console.error('Failed to fetch bills:', error)
-    }
+    setData((prev) => ({ ...prev, bills: [] }))
   }, [])
 
   const refreshStaff = useCallback(async () => {
@@ -80,22 +78,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const refreshDutyAssignments = useCallback(async () => {
+    try {
+      const response = await apiClient.getDutyAssignments()
+      setData((prev) => ({ ...prev, dutyAssignments: response.data || [] }))
+    } catch (error) {
+      console.error('Failed to fetch duty assignments:', error)
+    }
+  }, [])
+
   const refreshAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [patientsRes, appointmentsRes, prescriptionsRes, billsRes, staffRes] = await Promise.all([
-        apiClient.getAllPatients().catch(e => ({ data: [] })),
-        apiClient.getAllAppointments().catch(e => ({ data: [] })),
-        apiClient.getAllPrescriptions().catch(e => ({ data: [] })),
-        apiClient.getBills().catch(e => ({ data: [] })),
-        apiClient.getAllStaff().catch(e => ({ data: [] })),
+      const [patientsRes, appointmentsRes, prescriptionsRes, staffRes, dutyAssignmentsRes] = await Promise.all([
+        apiClient.getAllPatients().catch(() => ({ data: [] })),
+        apiClient.getAllAppointments().catch(() => ({ data: [] })),
+        apiClient.getAllPrescriptions().catch(() => ({ data: [] })),
+        apiClient.getAllStaff().catch(() => ({ data: [] })),
+        apiClient.getDutyAssignments().catch(() => ({ data: [] })),
       ])
       setData({
         patients: patientsRes.data || [],
         appointments: appointmentsRes.data || [],
         prescriptions: prescriptionsRes.data || [],
-        bills: billsRes.data || [],
+        bills: [],
         staff: staffRes.data || [],
+        dutyAssignments: dutyAssignmentsRes.data || [],
       })
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
@@ -105,7 +113,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <DataContext.Provider value={{ data, loading, refreshPatients, refreshAppointments, refreshPrescriptions, refreshBills, refreshStaff, refreshAll }}>
+    <DataContext.Provider value={{ data, loading, refreshPatients, refreshAppointments, refreshPrescriptions, refreshBills, refreshStaff, refreshDutyAssignments, refreshAll }}>
       {children}
     </DataContext.Provider>
   )

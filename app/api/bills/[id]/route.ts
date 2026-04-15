@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { getRequestAuth, requireRole } from '@/lib/auth'
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { auth, errorResponse } = await getRequestAuth(request)
+    if (errorResponse || !auth) return errorResponse!
+    const roleError = requireRole(auth, ['admin'])
+    if (roleError) return roleError
+
     const { id } = await params
     const body = await request.json()
 

@@ -18,6 +18,33 @@ class APIClient {
       }
       return config
     })
+
+    this.client.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        const status = error?.response?.status
+
+        if (typeof window !== 'undefined' && status === 401) {
+          localStorage.removeItem('auth_token')
+          localStorage.removeItem('user_id')
+          localStorage.removeItem('user_email')
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login'
+          }
+        }
+
+        if (status === 403 && !error?.response?.data?.error) {
+          error.response = {
+            ...error.response,
+            data: {
+              error: 'Access denied for this action',
+            },
+          }
+        }
+
+        return Promise.reject(error)
+      }
+    )
   }
 
   login(email: string, password: string) {
@@ -116,6 +143,14 @@ class APIClient {
 
   getAllStaff() {
     return this.client.get('/staff')
+  }
+
+  getDutyAssignments() {
+    return this.client.get('/duty-assignments')
+  }
+
+  saveDutyAssignments(data: { duty_date: string; staff_ids: string[] }) {
+    return this.client.post('/duty-assignments', data)
   }
 
   createStaff(data: any) {

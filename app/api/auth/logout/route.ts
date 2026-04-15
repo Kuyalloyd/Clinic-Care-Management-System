@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabase, supabaseAdmin } from '@/lib/supabase'
+import { getRequestAuth } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
+    const { auth } = await getRequestAuth(request)
+    if (auth) {
+      await supabaseAdmin
+        .from('staff')
+        .update({ is_on_duty: false })
+        .eq('id', auth.staffId)
+    }
+
     const { error } = await supabase.auth.signOut()
 
     if (error) {

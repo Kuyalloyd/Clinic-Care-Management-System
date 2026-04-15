@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
+import { getRequestAuth, requireRole } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
+    const { auth, errorResponse } = await getRequestAuth(request)
+    if (errorResponse || !auth) return errorResponse!
+
     const { searchParams } = new URL(request.url)
     const patientId = searchParams.get('patient_id')
     const staffId = searchParams.get('staff_id')
@@ -14,6 +18,10 @@ export async function GET(request: NextRequest) {
     if (staffId) query = query.eq('staff_id', staffId)
     if (date) query = query.eq('appointment_date', date)
 
+    if (auth.role === 'doctor' || auth.role === 'nurse') {
+      query = query.eq('staff_id', auth.staffId)
+    }
+
     const { data, error } = await query.order('appointment_date', {
       ascending: true,
     })
@@ -24,6 +32,10 @@ export async function GET(request: NextRequest) {
       if (patientId) fallbackQuery = fallbackQuery.eq('patient_id', patientId)
       if (staffId) fallbackQuery = fallbackQuery.eq('staff_id', staffId)
       if (date) fallbackQuery = fallbackQuery.eq('appointment_date', date)
+
+      if (auth.role === 'doctor' || auth.role === 'nurse') {
+        fallbackQuery = fallbackQuery.eq('staff_id', auth.staffId)
+      }
 
       const fallback = await fallbackQuery.order('appointment_date', {
         ascending: true,
@@ -51,6 +63,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { auth, errorResponse } = await getRequestAuth(request)
+    if (errorResponse || !auth) return errorResponse!
+    const roleError = requireRole(auth, ['admin'])
+    if (roleError) return roleError
+
     const body = await request.json()
 
     if (!body.patient_id) {

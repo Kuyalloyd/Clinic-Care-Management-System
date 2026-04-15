@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
           id: authData.user.id,
           email,
           full_name: fullName,
-          role: 'receptionist', // Default role
+          role: 'doctor',
         })
 
       if (profileError) {

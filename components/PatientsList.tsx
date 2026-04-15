@@ -9,6 +9,7 @@ import { Plus, Eye, Edit2, Trash2 } from 'lucide-react'
 export default function PatientsList() {
   const { data, refreshPatients } = useDashboardData()
   const [loading, setLoading] = useState(true)
+  const [currentRole, setCurrentRole] = useState<'admin' | 'doctor' | 'nurse' | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -24,6 +25,18 @@ export default function PatientsList() {
 
     loadPatients()
   }, [refreshPatients])
+
+  useEffect(() => {
+    const userEmail = (localStorage.getItem('user_email') || '').toLowerCase()
+    if (!userEmail) return
+
+    const member = data.staff.find((staffMember) => staffMember.email?.toLowerCase() === userEmail)
+    if (member?.role && member.role !== 'receptionist') {
+      setCurrentRole(member.role)
+    }
+  }, [data.staff])
+
+  const canManagePatients = currentRole === 'admin'
 
   const calculateAge = (dateOfBirth: string) => {
     if (!dateOfBirth) return '-'
@@ -79,14 +92,22 @@ export default function PatientsList() {
           <h2 className="text-2xl font-bold text-gray-900 mb-1">Patient Records</h2>
           <p className="text-gray-600 text-sm">Manage all patient information</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="btn-primary btn-lg w-full sm:w-auto"
-        >
-          <Plus size={20} />
-          Add Patient
-        </button>
+        {canManagePatients && (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="btn-primary btn-lg w-full sm:w-auto"
+          >
+            <Plus size={20} />
+            Add Patient
+          </button>
+        )}
       </div>
+
+      {!canManagePatients && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm text-blue-700">You can view patients, but only admin can add or edit patient records.</p>
+        </div>
+      )}
 
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -181,18 +202,22 @@ export default function PatientsList() {
                         >
                           <Eye size={18} />
                         </button>
-                        <button
-                          onClick={() => handleEdit(patient.id)}
-                          className="p-1 text-green-600 hover:bg-green-50 rounded transition"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(patient.id)}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded transition"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        {canManagePatients && (
+                          <button
+                            onClick={() => handleEdit(patient.id)}
+                            className="p-1 text-green-600 hover:bg-green-50 rounded transition"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                        )}
+                        {canManagePatients && (
+                          <button
+                            onClick={() => handleDelete(patient.id)}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded transition"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

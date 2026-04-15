@@ -4,19 +4,17 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/apiClient'
 import { Staff } from '@/lib/types'
-import { Plus, Edit2, Phone, Mail, Calendar, Trash2 } from 'lucide-react'
+import { Plus, Edit2, Phone, Mail, Calendar, Trash2, Loader2 } from 'lucide-react'
 
 const roleColors: Record<string, string> = {
   doctor: 'bg-blue-100 text-blue-800',
   nurse: 'bg-green-100 text-green-800',
-  receptionist: 'bg-purple-100 text-purple-800',
   admin: 'bg-orange-100 text-orange-800'
 }
 
 const avatarColors: Record<string, string> = {
   doctor: 'bg-blue-600',
   nurse: 'bg-green-600',
-  receptionist: 'bg-purple-600',
   admin: 'bg-orange-600'
 }
 
@@ -31,6 +29,7 @@ export default function StaffList() {
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [savingDutyId, setSavingDutyId] = useState<string | null>(null)
 
   useEffect(() => {
     const userEmail = localStorage.getItem('user_email')
@@ -101,7 +100,21 @@ export default function StaffList() {
     }
   }
 
+  const handleToggleDuty = async (member: Staff) => {
+    try {
+      setSavingDutyId(member.id)
+      await apiClient.updateStaff(member.id, { is_on_duty: !member.is_on_duty })
+      fetchStaff()
+    } catch (error: any) {
+      const msg = error?.response?.data?.error || error?.message || 'Failed to update duty status'
+      alert(msg)
+    } finally {
+      setSavingDutyId(null)
+    }
+  }
+
   const filteredStaff = staff.filter((member) => {
+    if (member.role === 'receptionist') return false
     const matchesRole = !activeRole || member.role === activeRole
     const matchesSearch = 
       member.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -114,7 +127,6 @@ export default function StaffList() {
     { label: 'All Roles', value: null },
     { label: 'Doctor', value: 'doctor' },
     { label: 'Nurse', value: 'nurse' },
-    { label: 'Receptionist', value: 'receptionist' }
   ]
 
   const formatDate = (dateString: string) => {
@@ -293,6 +305,15 @@ export default function StaffList() {
                   <Calendar size={16} className="text-gray-400" />
                   {formatDate(member.created_at)}
                 </div>
+                <div className="pt-2">
+                  <span
+                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                      member.is_on_duty ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {member.is_on_duty ? 'On Duty' : 'Off Duty'}
+                  </span>
+                </div>
               </div>
 
               {/* Action Buttons */}
@@ -312,6 +333,23 @@ export default function StaffList() {
                   Delete
                 </button>
               </div>
+
+              <button
+                onClick={() => handleToggleDuty(member)}
+                disabled={savingDutyId === member.id}
+                className={`w-full mt-2 px-3 py-2 rounded-lg font-medium text-sm transition ${
+                  member.is_on_duty
+                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                } disabled:opacity-60 disabled:cursor-not-allowed`}
+              >
+                {savingDutyId === member.id ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Loader2 size={14} className="animate-spin" />
+                    Saving...
+                  </span>
+                ) : member.is_on_duty ? 'Set Off Duty' : 'Set On Duty'}
+              </button>
             </div>
           ))
         )}
@@ -326,6 +364,7 @@ function StaffForm({ onSuccess, onClose, staff }: { onSuccess: () => void; onClo
   const [formData, setFormData] = useState({
     full_name: staff?.full_name || '',
     email: staff?.email || '',
+    password: '',
     phone: staff?.phone || '',
     role: staff?.role || 'doctor',
     specialty: staff?.specialty || ''
@@ -348,6 +387,10 @@ function StaffForm({ onSuccess, onClose, staff }: { onSuccess: () => void; onClo
       const dataToSave = {
         ...formData,
         role: formData.role.toLowerCase(), // Convert to lowercase for Supabase
+      }
+
+      if (isEditing) {
+        delete (dataToSave as any).password
       }
 
       if (isEditing) {
@@ -407,6 +450,22 @@ function StaffForm({ onSuccess, onClose, staff }: { onSuccess: () => void; onClo
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             />
           </div>
+          {!isEditing && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                minLength={6}
+                placeholder="Set initial login password"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              />
+              <p className="text-xs text-gray-500 mt-1">Give this password to the staff member for first login.</p>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
             <input
@@ -438,7 +497,6 @@ function StaffForm({ onSuccess, onClose, staff }: { onSuccess: () => void; onClo
             >
               <option value="doctor">Doctor</option>
               <option value="nurse">Nurse</option>
-              <option value="receptionist">Receptionist</option>
               <option value="admin">Admin</option>
             </select>
           </div>

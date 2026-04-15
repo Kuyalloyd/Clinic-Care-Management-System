@@ -5,6 +5,15 @@ export interface Staff {
   role: 'admin' | 'doctor' | 'nurse' | 'receptionist'
   phone: string
   specialty?: string
+  is_on_duty?: boolean
+  created_at: string
+}
+
+export interface DutyAssignment {
+  id: string
+  duty_date: string
+  staff_id: string
+  assigned_by?: string | null
   created_at: string
 }
 
@@ -55,6 +64,8 @@ export interface Prescription {
   prescribed_date: string
   expiry_date: string
   is_completed: boolean
+  updated_at?: string
+  updated_by?: string
   created_at: string
 }
 
