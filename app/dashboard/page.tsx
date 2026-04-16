@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Menu, LogOut, Home, Users, Calendar, Pill, BarChart3, Archive, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Menu, LogOut, Home, Users, Calendar, Pill, BarChart3, Archive, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { useDashboardData } from '@/lib/DataContext'
 import { apiClient } from '@/lib/apiClient'
 import PatientsList from '@/components/PatientsList'
@@ -20,7 +20,7 @@ type UserRole = 'admin' | 'doctor' | 'nurse' | 'receptionist'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { data, loading: dataLoading, refreshAll, refreshAppointments, refreshDutyAssignments } = useDashboardData()
+  const { data, refreshAll, refreshAppointments, refreshDutyAssignments } = useDashboardData()
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
@@ -39,6 +39,7 @@ export default function DashboardPage() {
     return new Date(today.getFullYear(), today.getMonth(), 1)
   })
   const [selectedDutyStaffIds, setSelectedDutyStaffIds] = useState<string[]>([])
+  const [savingDutyAssignments, setSavingDutyAssignments] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token')
@@ -276,6 +277,7 @@ export default function DashboardPage() {
 
   const handleSaveDutyAssignments = async () => {
     try {
+      setSavingDutyAssignments(true)
       await apiClient.saveDutyAssignments({
         duty_date: selectedDutyDate,
         staff_ids: selectedDutyStaffIds,
@@ -283,10 +285,12 @@ export default function DashboardPage() {
       await refreshDutyAssignments()
     } catch (error: any) {
       alert(error?.response?.data?.error || error?.message || 'Failed to save duty record')
+    } finally {
+      setSavingDutyAssignments(false)
     }
   }
 
-  if (loading || dataLoading) {
+  if (loading) {
     return <div className="min-h-screen bg-gray-50" />
   }
 
@@ -309,52 +313,88 @@ export default function DashboardPage() {
 
   const renderAdminOverview = () => (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-6">
-        <div className={`card p-4 sm:p-5 md:p-6 border-l-4 ${currentRole === 'doctor' ? 'border-l-emerald-500' : currentRole === 'nurse' ? 'border-l-cyan-500' : 'border-l-blue-500'} hover:shadow-md transition-shadow ${roleTheme.surface}`}>
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <p className="text-gray-600 text-xs sm:text-sm font-medium mb-1.5">Total Patients & Students</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{data.patients.length}</p>
+      <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-[0.22em] font-semibold text-slate-300">Admin Operations</p>
+            <h3 className="text-xl sm:text-2xl font-bold text-white mt-1">Clinic control center</h3>
+            <p className="text-sm text-slate-300 mt-2 max-w-2xl">
+              Real-time view of staffing, consultations, prescriptions, and duty assignments for today's operations.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 min-w-[220px]">
+            <div className="rounded-lg border border-white/15 bg-white/10 px-3 py-2">
+              <p className="text-[10px] uppercase tracking-wide text-slate-300 font-semibold">Today appointments</p>
+              <p className="text-xl font-bold text-white mt-0.5">{todayAppointments.length}</p>
             </div>
-            <Users className={`w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 ${currentRole === 'doctor' ? 'text-emerald-100' : currentRole === 'nurse' ? 'text-cyan-100' : 'text-blue-100'}`} />
+            <div className="rounded-lg border border-white/15 bg-white/10 px-3 py-2">
+              <p className="text-[10px] uppercase tracking-wide text-slate-300 font-semibold">Duty records</p>
+              <p className="text-xl font-bold text-white mt-0.5">{monthDutyTotal}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Patients</p>
+              <p className="text-3xl font-bold text-slate-900 mt-1">{data.patients.length}</p>
+              <p className="text-xs text-slate-500 mt-1">Total active records</p>
+            </div>
+            <span className="h-10 w-10 rounded-xl bg-blue-50 border border-blue-100 inline-flex items-center justify-center">
+              <Users className="w-5 h-5 text-blue-600" />
+            </span>
           </div>
         </div>
 
-        <div className={`card p-4 sm:p-5 md:p-6 border-l-4 ${currentRole === 'doctor' ? 'border-l-teal-500' : currentRole === 'nurse' ? 'border-l-blue-500' : 'border-l-green-500'} hover:shadow-md transition-shadow ${roleTheme.surface}`}>
-          <div className="flex items-center justify-between gap-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-gray-600 text-xs sm:text-sm font-medium mb-1.5">Completed Consultations</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{completedAppointments}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Consultations</p>
+              <p className="text-3xl font-bold text-slate-900 mt-1">{completedAppointments}</p>
+              <p className="text-xs text-slate-500 mt-1">Completed appointments</p>
             </div>
-            <Calendar className={`w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 ${currentRole === 'doctor' ? 'text-teal-100' : currentRole === 'nurse' ? 'text-blue-100' : 'text-green-100'}`} />
+            <span className="h-10 w-10 rounded-xl bg-emerald-50 border border-emerald-100 inline-flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-emerald-600" />
+            </span>
           </div>
         </div>
 
-        <div className={`card p-4 sm:p-5 md:p-6 border-l-4 ${currentRole === 'doctor' ? 'border-l-lime-500' : currentRole === 'nurse' ? 'border-l-cyan-500' : 'border-l-amber-500'} hover:shadow-md transition-shadow ${roleTheme.surface}`}>
-          <div className="flex items-center justify-between gap-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-gray-600 text-xs sm:text-sm font-medium mb-1.5">Staff On Duty</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{staffOnDutyCount}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">On Duty</p>
+              <p className="text-3xl font-bold text-slate-900 mt-1">{staffOnDutyCount}</p>
+              <p className="text-xs text-slate-500 mt-1">Doctors and nurses live</p>
             </div>
-            <Users className={`w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 ${currentRole === 'doctor' ? 'text-lime-100' : currentRole === 'nurse' ? 'text-cyan-100' : 'text-amber-100'}`} />
+            <span className="h-10 w-10 rounded-xl bg-amber-50 border border-amber-100 inline-flex items-center justify-center">
+              <Users className="w-5 h-5 text-amber-600" />
+            </span>
           </div>
         </div>
 
-        <div className={`card p-4 sm:p-5 md:p-6 border-l-4 ${currentRole === 'doctor' ? 'border-l-rose-500' : currentRole === 'nurse' ? 'border-l-pink-500' : 'border-l-red-500'} hover:shadow-md transition-shadow ${roleTheme.surface}`}>
-          <div className="flex items-center justify-between gap-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-gray-600 text-xs sm:text-sm font-medium mb-1.5">Pending Scripts</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{pendingPrescriptions}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Pending Scripts</p>
+              <p className="text-3xl font-bold text-slate-900 mt-1">{pendingPrescriptions}</p>
+              <p className="text-xs text-slate-500 mt-1">Need completion review</p>
             </div>
-            <Pill className={`w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 ${currentRole === 'doctor' ? 'text-rose-100' : currentRole === 'nurse' ? 'text-pink-100' : 'text-red-100'}`} />
+            <span className="h-10 w-10 rounded-xl bg-rose-50 border border-rose-100 inline-flex items-center justify-center">
+              <Pill className="w-5 h-5 text-rose-600" />
+            </span>
           </div>
         </div>
-
       </div>
 
       <div>
-        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Duty Operations Center</h3>
-        <div className="card p-3 sm:p-4 md:p-5 mb-6 border border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h3 className="text-lg sm:text-xl font-bold text-slate-900">Duty Operations Center</h3>
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Planning and allocation</span>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4 md:p-5 mb-6 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
             <div>
               <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Monthly overview</p>
@@ -420,6 +460,7 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedDutyStaffIds([])}
+                    disabled={savingDutyAssignments}
                     className="px-3 py-2 rounded-md text-xs font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50"
                   >
                     Clear
@@ -427,9 +468,17 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={handleSaveDutyAssignments}
-                    className="px-3 py-2 rounded-md text-xs font-semibold bg-slate-800 text-white hover:bg-slate-900"
+                    disabled={savingDutyAssignments}
+                    className="px-3 py-2 rounded-md text-xs font-semibold bg-slate-800 text-white hover:bg-slate-900 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    Save Duty Record
+                    {savingDutyAssignments ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Loader2 size={12} className="animate-spin" />
+                        Saving...
+                      </span>
+                    ) : (
+                      'Save Duty Record'
+                    )}
                   </button>
                 </div>
               </div>
@@ -508,8 +557,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Today's Appointments</h3>
-        <div className="card overflow-x-auto">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h3 className="text-lg sm:text-xl font-bold text-slate-900">Today's Appointments</h3>
+          <span className="text-xs font-semibold text-slate-500">Top 8 schedule items</span>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white overflow-x-auto shadow-sm">
           <table className="w-full min-w-full">
             <thead className="border-b border-gray-100 bg-gray-50">
               <tr>
@@ -550,8 +602,11 @@ export default function DashboardPage() {
 
 
       <div>
-        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Who Is On Duty Today</h3>
-        <div className="card overflow-x-auto">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h3 className="text-lg sm:text-xl font-bold text-slate-900">Who Is On Duty Today</h3>
+          <span className="text-xs font-semibold text-slate-500">Live staffing snapshot</span>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white overflow-x-auto shadow-sm">
           <table className="w-full min-w-full">
             <thead className="border-b border-gray-100 bg-gray-50">
               <tr>
@@ -584,8 +639,11 @@ export default function DashboardPage() {
       </div>
 
       <div>
-        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Recent Patients</h3>
-        <div className="card overflow-hidden">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h3 className="text-lg sm:text-xl font-bold text-slate-900">Recent Patients</h3>
+          <span className="text-xs font-semibold text-slate-500">Latest registered profiles</span>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
           <div className="divide-y divide-gray-100">
             {data.patients.length === 0 ? (
               <div className="px-4 sm:px-6 py-8 sm:py-12 text-center">
@@ -683,7 +741,12 @@ export default function DashboardPage() {
                           disabled={updatingTaskId === task.id}
                           className="text-xs px-3 py-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
                         >
-                          {updatingTaskId === task.id ? 'Saving...' : 'Mark Done'}
+                          {updatingTaskId === task.id ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <Loader2 size={12} className="animate-spin" />
+                              Saving...
+                            </span>
+                          ) : 'Mark Done'}
                         </button>
                       ) : (
                         <button
@@ -692,7 +755,12 @@ export default function DashboardPage() {
                           disabled={updatingTaskId === task.id}
                           className="text-xs px-3 py-1 rounded-md bg-gray-700 text-white hover:bg-gray-800 disabled:opacity-50"
                         >
-                          {updatingTaskId === task.id ? 'Saving...' : 'Undo'}
+                          {updatingTaskId === task.id ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <Loader2 size={12} className="animate-spin" />
+                              Saving...
+                            </span>
+                          ) : 'Undo'}
                         </button>
                       )}
                     </div>
@@ -781,7 +849,12 @@ export default function DashboardPage() {
                         disabled={updatingTaskId === task.id}
                         className="text-xs px-3 py-1 rounded-md bg-cyan-600 text-white hover:bg-cyan-700 disabled:opacity-50"
                       >
-                        {updatingTaskId === task.id ? 'Saving...' : 'Mark Done'}
+                        {updatingTaskId === task.id ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <Loader2 size={12} className="animate-spin" />
+                            Saving...
+                          </span>
+                        ) : 'Mark Done'}
                       </button>
                     ) : (
                       <button
@@ -790,7 +863,12 @@ export default function DashboardPage() {
                         disabled={updatingTaskId === task.id}
                         className="text-xs px-3 py-1 rounded-md bg-gray-700 text-white hover:bg-gray-800 disabled:opacity-50"
                       >
-                        {updatingTaskId === task.id ? 'Saving...' : 'Undo'}
+                        {updatingTaskId === task.id ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <Loader2 size={12} className="animate-spin" />
+                            Saving...
+                          </span>
+                        ) : 'Undo'}
                       </button>
                     )}
                   </div>

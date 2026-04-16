@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/apiClient'
+import { useDashboardData } from '@/lib/DataContext'
 import { Staff } from '@/lib/types'
 import { Plus, Edit2, Phone, Mail, Calendar, Trash2, Loader2 } from 'lucide-react'
+import ActionToast from './ActionToast'
 
 const roleColors: Record<string, string> = {
   doctor: 'bg-blue-100 text-blue-800',
@@ -19,6 +21,7 @@ const avatarColors: Record<string, string> = {
 }
 
 export default function StaffList() {
+  const { refreshStaff, refreshDutyAssignments } = useDashboardData()
   const [staff, setStaff] = useState<Staff[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -30,6 +33,18 @@ export default function StaffList() {
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [savingDutyId, setSavingDutyId] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'error' | 'info' }>({
+    open: false,
+    message: '',
+    type: 'info',
+  })
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info') => {
+    setToast({ open: true, message, type })
+    setTimeout(() => {
+      setToast((current) => ({ ...current, open: false }))
+    }, 2600)
+  }
 
   useEffect(() => {
     const userEmail = localStorage.getItem('user_email')
@@ -89,12 +104,12 @@ export default function StaffList() {
         throw new Error('Failed to delete staff')
       }
 
-      alert('Staff member deleted successfully!')
+      showToast('Staff member deleted successfully.', 'success')
       setShowDeleteModal(null)
       fetchStaff()
     } catch (error: any) {
       console.error('Failed to delete staff:', error)
-      alert('Failed to delete staff member')
+      showToast(error?.message || 'Failed to delete staff member.', 'error')
     } finally {
       setDeleting(false)
     }
@@ -104,7 +119,11 @@ export default function StaffList() {
     try {
       setSavingDutyId(member.id)
       await apiClient.updateStaff(member.id, { is_on_duty: !member.is_on_duty })
-      fetchStaff()
+      await Promise.all([
+        fetchStaff(),
+        refreshStaff(),
+        refreshDutyAssignments(),
+      ])
     } catch (error: any) {
       const msg = error?.response?.data?.error || error?.message || 'Failed to update duty status'
       alert(msg)
@@ -201,6 +220,7 @@ export default function StaffList() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteModal(null)}
+                disabled={deleting}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
               >
                 Cancel
@@ -215,12 +235,24 @@ export default function StaffList() {
                 disabled={deleting}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
-                {deleting ? 'Deleting...' : 'Delete'}
+                {deleting ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Loader2 size={14} className="animate-spin" />
+                    Deleting...
+                  </span>
+                ) : 'Delete'}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <ActionToast
+        open={toast.open}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast((current) => ({ ...current, open: false }))}
+      />
 
       {/* Search Bar */}
       <div className="relative">

@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { apiClient } from '@/lib/apiClient'
 import { useDashboardData } from '@/lib/DataContext'
 import { Patient } from '@/lib/types'
-import { Plus, Eye, Edit2, Trash2 } from 'lucide-react'
+import { Plus, Eye, Edit2, Trash2, Loader2 } from 'lucide-react'
+import ActionToast from './ActionToast'
 
 export default function PatientsList() {
   const { data, refreshPatients } = useDashboardData()
@@ -15,6 +16,19 @@ export default function PatientsList() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [viewingId, setViewingId] = useState<string | null>(null)
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null)
+  const [deletingPatientId, setDeletingPatientId] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'error' | 'info' }>({
+    open: false,
+    message: '',
+    type: 'info',
+  })
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info') => {
+    setToast({ open: true, message, type })
+    setTimeout(() => {
+      setToast((current) => ({ ...current, open: false }))
+    }, 2600)
+  }
 
   useEffect(() => {
     const loadPatients = async () => {
@@ -53,12 +67,16 @@ export default function PatientsList() {
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this patient?')) {
       try {
+        setDeletingPatientId(id)
         await apiClient.deletePatient(id)
-        refreshPatients()
+        await refreshPatients()
+        showToast('Patient deleted successfully.', 'success')
       } catch (error: any) {
         console.error('Failed to delete patient:', error)
         const msg = error?.response?.data?.error || error?.message || 'Failed to delete patient'
-        alert(msg)
+        showToast(msg, 'error')
+      } finally {
+        setDeletingPatientId(null)
       }
     }
   }
@@ -213,9 +231,14 @@ export default function PatientsList() {
                         {canManagePatients && (
                           <button
                             onClick={() => handleDelete(patient.id)}
+                            disabled={deletingPatientId === patient.id}
                             className="p-1 text-red-600 hover:bg-red-50 rounded transition"
                           >
-                            <Trash2 size={18} />
+                            {deletingPatientId === patient.id ? (
+                              <Loader2 size={18} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={18} />
+                            )}
                           </button>
                         )}
                       </div>
@@ -227,6 +250,13 @@ export default function PatientsList() {
           </table>
         </div>
       </div>
+
+      <ActionToast
+        open={toast.open}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast((current) => ({ ...current, open: false }))}
+      />
     </div>
   )
 }

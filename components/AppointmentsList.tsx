@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react'
 import { apiClient } from '@/lib/apiClient'
 import { useDashboardData } from '@/lib/DataContext'
 import { Appointment, Patient, Staff } from '@/lib/types'
-import { Plus, Calendar, Clock, User, Mail, Trash2, Search } from 'lucide-react'
+import { Plus, Calendar, Clock, User, Mail, Trash2, Search, Loader2 } from 'lucide-react'
 import EmailModal from './EmailModal'
+import ActionToast from './ActionToast'
 
 export default function AppointmentsList() {
   const { data, refreshAppointments } = useDashboardData()
@@ -20,6 +21,18 @@ export default function AppointmentsList() {
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentRole, setCurrentRole] = useState<string>('')
+  const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'error' | 'info' }>({
+    open: false,
+    message: '',
+    type: 'info',
+  })
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info') => {
+    setToast({ open: true, message, type })
+    setTimeout(() => {
+      setToast((current) => ({ ...current, open: false }))
+    }, 2600)
+  }
 
   useEffect(() => {
     const email = localStorage.getItem('user_email') || ''
@@ -64,12 +77,12 @@ export default function AppointmentsList() {
         throw new Error('Failed to delete appointment')
       }
 
-      alert('Appointment deleted successfully!')
+      showToast('Appointment deleted successfully.', 'success')
       setShowDeleteModal(null)
       refreshAppointments()
     } catch (error: any) {
       console.error('Failed to delete appointment:', error)
-      alert('Failed to delete appointment')
+      showToast(error?.message || 'Failed to delete appointment.', 'error')
     } finally {
       setDeleting(false)
     }
@@ -340,6 +353,7 @@ export default function AppointmentsList() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteModal(null)}
+                disabled={deleting}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
               >
                 Cancel
@@ -354,12 +368,24 @@ export default function AppointmentsList() {
                 disabled={deleting}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
-                {deleting ? 'Deleting...' : 'Delete'}
+                {deleting ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Loader2 size={14} className="animate-spin" />
+                    Deleting...
+                  </span>
+                ) : 'Delete'}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <ActionToast
+        open={toast.open}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast((current) => ({ ...current, open: false }))}
+      />
     </div>
   )
 }

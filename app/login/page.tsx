@@ -50,17 +50,6 @@ function LoginContent() {
           <section className="bg-white p-6 sm:p-8 md:p-10 flex items-center">
             <div className="w-full max-w-md mx-auto space-y-6">
               <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <img
-                    src="/images/profile.jpg"
-                    alt="Clinic Care Logo"
-                    className="w-12 h-12 rounded-lg object-cover"
-                  />
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.22em] text-blue-700 font-semibold">Welcome To</p>
-                    <span className="text-sm font-semibold text-blue-700 tracking-wide">Clinic Care</span>
-                  </div>
-                </div>
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">Login</h1>
                   <p className="text-sm text-gray-500 mt-1">Enter your credentials to continue to your account.</p>

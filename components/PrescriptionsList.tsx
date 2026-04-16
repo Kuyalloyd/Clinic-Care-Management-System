@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { apiClient } from '@/lib/apiClient'
 import { useDashboardData } from '@/lib/DataContext'
 import { Prescription, Patient } from '@/lib/types'
-import { Plus, FileText, Printer, Edit2, Trash2 } from 'lucide-react'
+import { Plus, FileText, Printer, Edit2, Trash2, Loader2 } from 'lucide-react'
+import ActionToast from './ActionToast'
 
 export default function PrescriptionsList() {
   const { data, refreshPrescriptions } = useDashboardData()
@@ -20,6 +21,18 @@ export default function PrescriptionsList() {
   const [currentRole, setCurrentRole] = useState<string>('')
   const [togglingRxId, setTogglingRxId] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'done'>('all')
+  const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'error' | 'info' }>({
+    open: false,
+    message: '',
+    type: 'info',
+  })
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info') => {
+    setToast({ open: true, message, type })
+    setTimeout(() => {
+      setToast((current) => ({ ...current, open: false }))
+    }, 2600)
+  }
 
   useEffect(() => {
     const email = localStorage.getItem('user_email') || ''
@@ -100,12 +113,12 @@ export default function PrescriptionsList() {
         throw new Error('Failed to delete prescription')
       }
 
-      alert('Prescription deleted successfully!')
+      showToast('Prescription deleted successfully.', 'success')
       setShowDeleteModal(null)
       refreshPrescriptions()
     } catch (error: any) {
       console.error('Failed to delete prescription:', error)
-      alert('Failed to delete prescription')
+      showToast(error?.message || 'Failed to delete prescription.', 'error')
     } finally {
       setDeleting(false)
     }
@@ -576,6 +589,7 @@ export default function PrescriptionsList() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteModal(null)}
+                disabled={deleting}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
               >
                 Cancel
@@ -590,12 +604,24 @@ export default function PrescriptionsList() {
                 disabled={deleting}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
-                {deleting ? 'Deleting...' : 'Delete'}
+                {deleting ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Loader2 size={14} className="animate-spin" />
+                    Deleting...
+                  </span>
+                ) : 'Delete'}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <ActionToast
+        open={toast.open}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast((current) => ({ ...current, open: false }))}
+      />
     </div>
   )
 }

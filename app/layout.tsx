@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   description: "Modern school clinic care management system with patient records, appointments, prescriptions, and reports",
   viewport: "width=device-width, initial-scale=1",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/images/favicon.ico",
   },
 };
 
