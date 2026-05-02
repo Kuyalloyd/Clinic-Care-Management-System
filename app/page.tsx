@@ -9,7 +9,8 @@ export default function Home() {
   useEffect(() => {
     const token = localStorage.getItem('auth_token')
     if (token) {
-      router.push('/dashboard')
+      const role = localStorage.getItem('user_role')
+      router.push(role === 'admin' ? '/admin' : '/dashboard')
     } else {
       router.push('/login')
     }

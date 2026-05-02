@@ -13,27 +13,42 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const updatePayload = { ...body }
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from('prescriptions')
+      .select('id, staff_id')
+      .eq('id', id)
+      .single()
+
+    if (existingError || !existing) {
+      return NextResponse.json({ error: existingError?.message || 'Prescription not found' }, { status: 404 })
+    }
+
+    let updatePayload: Record<string, unknown> = {}
 
     if (auth.role === 'doctor') {
-      const { data: existing, error: existingError } = await supabaseAdmin
-        .from('prescriptions')
-        .select('id, staff_id')
-        .eq('id', id)
-        .single()
-
-      if (existingError || !existing) {
-        return NextResponse.json({ error: existingError?.message || 'Prescription not found' }, { status: 404 })
-      }
-
       if (existing.staff_id !== auth.staffId) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
 
-      // Doctors can update their own prescription details but cannot reassign ownership.
+      updatePayload = { ...body }
       delete updatePayload.staff_id
+      delete updatePayload.is_completed
+    } else if (auth.role === 'nurse') {
+      const requestedKeys = Object.keys(body)
+      if (
+        requestedKeys.length !== 1 ||
+        !requestedKeys.includes('is_completed') ||
+        typeof body.is_completed !== 'boolean'
+      ) {
+        return NextResponse.json(
+          { error: 'Nurses can only update the prescription completion status' },
+          { status: 403 }
+        )
+      }
+
+      updatePayload = { is_completed: body.is_completed }
     } else {
-      const roleError = requireRole(auth, ['admin'])
+      const roleError = requireRole(auth, ['doctor', 'nurse'])
       if (roleError) return roleError
     }
 
@@ -71,23 +86,21 @@ export async function DELETE(
 
     const { id } = await params
 
-    if (auth.role === 'doctor') {
-      const { data: existing, error: existingError } = await supabaseAdmin
-        .from('prescriptions')
-        .select('id, staff_id')
-        .eq('id', id)
-        .single()
+    const roleError = requireRole(auth, ['doctor'])
+    if (roleError) return roleError
 
-      if (existingError || !existing) {
-        return NextResponse.json({ error: existingError?.message || 'Prescription not found' }, { status: 404 })
-      }
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from('prescriptions')
+      .select('id, staff_id')
+      .eq('id', id)
+      .single()
 
-      if (existing.staff_id !== auth.staffId) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
-    } else {
-      const roleError = requireRole(auth, ['admin'])
-      if (roleError) return roleError
+    if (existingError || !existing) {
+      return NextResponse.json({ error: existingError?.message || 'Prescription not found' }, { status: 404 })
+    }
+
+    if (existing.staff_id !== auth.staffId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const archived = await archiveAndDeleteById(supabaseAdmin, 'prescriptions', id)

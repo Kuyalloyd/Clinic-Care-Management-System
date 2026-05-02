@@ -20,7 +20,8 @@ export default function AppointmentsList() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [currentRole, setCurrentRole] = useState<string>('')
+  const [currentRole, setCurrentRole] = useState<'admin' | 'doctor' | 'nurse' | 'receptionist' | ''>('')
+  const [currentStaffId, setCurrentStaffId] = useState<string>('')
   const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'error' | 'info' }>({
     open: false,
     message: '',
@@ -31,13 +32,37 @@ export default function AppointmentsList() {
     setToast({ open: true, message, type })
     setTimeout(() => {
       setToast((current) => ({ ...current, open: false }))
-    }, 2600)
+  }, 2600)
   }
 
   useEffect(() => {
-    const email = localStorage.getItem('user_email') || ''
-    const staffMember = data.staff.find((s) => s.email?.toLowerCase() === email.toLowerCase())
-    setCurrentRole(staffMember?.role || '')
+    const storedRole = localStorage.getItem('user_role')
+    const userEmail = (localStorage.getItem('user_email') || '').toLowerCase()
+    const userId = localStorage.getItem('user_id') || ''
+    const staffMember = data.staff.find(
+      (member) => member.id === userId || member.email?.toLowerCase() === userEmail
+    )
+
+    if (staffMember) {
+      setCurrentRole(staffMember.role)
+      setCurrentStaffId(staffMember.id)
+      setLoading(false)
+      return
+    }
+
+    if (
+      storedRole === 'admin' ||
+      storedRole === 'doctor' ||
+      storedRole === 'nurse' ||
+      storedRole === 'receptionist'
+    ) {
+      setCurrentRole(storedRole)
+      setCurrentStaffId(userId)
+    } else {
+      setCurrentRole('')
+      setCurrentStaffId('')
+    }
+
     setLoading(false)
   }, [data.staff])
 
@@ -59,6 +84,11 @@ export default function AppointmentsList() {
     const rolePrefix = staff.role === 'doctor' ? 'Dr.' : staff.role === 'nurse' ? 'Nurse' : staff.role.charAt(0).toUpperCase() + staff.role.slice(1)
     return { name: staff.full_name, role: rolePrefix }
   }
+
+  const visibleAppointments =
+    currentRole === 'doctor' && currentStaffId
+      ? data.appointments.filter((appointment) => appointment.staff_id === currentStaffId)
+      : data.appointments
 
   const handleDeleteAppointment = async (appointmentId: string, patientName: string) => {
     if (!confirm(`Are you sure you want to delete the appointment for ${patientName}? This action cannot be undone.`)) return
@@ -104,8 +134,8 @@ export default function AppointmentsList() {
   }
 
   const filteredAppointments = (activeStatus === 'all'
-    ? data.appointments
-    : data.appointments.filter(apt => apt.status === activeStatus)
+    ? visibleAppointments
+    : visibleAppointments.filter(apt => apt.status === activeStatus)
   ).filter(apt => {
     const patientName = getPatientName(apt.patient_id).toLowerCase()
     const doctorName = getDoctorName(apt.staff_id).toLowerCase()
@@ -118,11 +148,11 @@ export default function AppointmentsList() {
   })
 
   const statusTabs = [
-    { label: 'All', value: 'all', count: data.appointments.length },
-    { label: 'Scheduled', value: 'scheduled', count: data.appointments.filter(a => a.status === 'scheduled').length },
-    { label: 'Completed', value: 'completed', count: data.appointments.filter(a => a.status === 'completed').length },
-    { label: 'No Show', value: 'no-show', count: data.appointments.filter(a => a.status === 'no-show').length },
-    { label: 'Cancelled', value: 'cancelled', count: data.appointments.filter(a => a.status === 'cancelled').length },
+    { label: 'All', value: 'all', count: visibleAppointments.length },
+    { label: 'Scheduled', value: 'scheduled', count: visibleAppointments.filter(a => a.status === 'scheduled').length },
+    { label: 'Completed', value: 'completed', count: visibleAppointments.filter(a => a.status === 'completed').length },
+    { label: 'No Show', value: 'no-show', count: visibleAppointments.filter(a => a.status === 'no-show').length },
+    { label: 'Cancelled', value: 'cancelled', count: visibleAppointments.filter(a => a.status === 'cancelled').length },
   ]
 
   if (loading) {
@@ -133,8 +163,14 @@ export default function AppointmentsList() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">Appointments</h2>
-          <p className="text-gray-600 text-sm">Manage clinic appointments and schedules</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">
+            {currentRole === 'doctor' ? 'My Appointments' : 'Appointments'}
+          </h2>
+          <p className="text-gray-600 text-sm">
+            {currentRole === 'doctor'
+              ? 'Email your assigned patients, review nurse intake details, and update appointment status.'
+              : 'Manage clinic appointments and schedules'}
+          </p>
         </div>
         {canCreateAppointments && (
           <button
@@ -170,7 +206,7 @@ export default function AppointmentsList() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" size={20} />
               <input
                 type="text"
-                placeholder="Search by patient name, doctor name, or reason..."
+                placeholder={currentRole === 'doctor' ? 'Search your appointments by patient, reason, or doctor...' : 'Search by patient name, doctor name, or reason...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -204,6 +240,8 @@ export default function AppointmentsList() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredAppointments.map((apt) => {
                 const patient = data.patients.find((p) => p.id === apt.patient_id)
+                const intakeStaff = patient?.created_by_staff_id ? getStaffInfo(patient.created_by_staff_id) : null
+                const intakeSummary = patient?.symptoms || patient?.intake_notes || ''
                 return (
                   <div
                     key={apt.id}
@@ -237,6 +275,19 @@ export default function AppointmentsList() {
                         <span>{apt.appointment_time}</span>
                       </div>
                     </div>
+
+                    {patient && (
+                      <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <p className="text-xs font-medium text-slate-600 mb-1">Patient Intake</p>
+                        <p className="text-sm text-slate-700">
+                          {intakeSummary || 'No intake concern recorded yet.'}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-2">
+                          Intake recorded by:{' '}
+                          {intakeStaff ? `${intakeStaff.role ? `${intakeStaff.role} ` : ''}${intakeStaff.name}` : 'Not recorded'}
+                        </p>
+                      </div>
+                    )}
 
                     {apt.notes && (
                       <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
@@ -870,14 +921,6 @@ function ChangeStatusForm({
             className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
           >
             {loading ? 'Updating...' : 'Update Status'}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={loading}
-            className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 disabled:opacity-50 font-medium"
-          >
-            Cancel
           </button>
         </div>
       </form>

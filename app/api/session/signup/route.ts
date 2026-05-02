@@ -16,15 +16,15 @@ export async function POST(request: NextRequest) {
 
     if (authData.user) {
       const { error: profileError } = await supabase
-          .from('staff')
-          .insert({
-            id: authData.user.id,
-            email,
-            full_name: fullName,
-            phone: phone || null,
-            role: role || 'doctor',
-            specialty: specialty || null,
-          })
+        .from('staff')
+        .insert({
+          id: authData.user.id,
+          email,
+          full_name: fullName,
+          phone: phone || null,
+          role: role || 'doctor',
+          specialty: specialty || null,
+        })
 
       if (profileError) {
         return NextResponse.json(

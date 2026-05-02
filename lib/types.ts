@@ -35,6 +35,10 @@ export interface Patient {
   insurance_number?: string
   emergency_contact_name?: string
   emergency_contact_phone?: string
+  recommended_doctor_id?: string | null
+  intake_notes?: string | null
+  created_by_staff_id?: string | null
+  updated_by_staff_id?: string | null
   created_at: string
 }
 
@@ -69,6 +73,20 @@ export interface Prescription {
   created_at: string
 }
 
+export interface Medicine {
+  id: string
+  name: string
+  category?: string | null
+  quantity: number
+  unit: string
+  reorder_level: number
+  supplier?: string | null
+  expiry_date?: string | null
+  notes?: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface Bill {
   id: string
   patient_id: string
@@ -86,5 +104,17 @@ export interface MedicalReport {
   staff_id: string
   report_type: string
   content: string
+  created_at: string
+}
+
+export interface StaffMessage {
+  id: string
+  sender_staff_id: string
+  recipient_staff_id: string
+  patient_id?: string | null
+  subject: string
+  message_body: string
+  is_read: boolean
+  read_at?: string | null
   created_at: string
 }

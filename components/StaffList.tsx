@@ -30,6 +30,7 @@ export default function StaffList() {
   const [activeRole, setActiveRole] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null)
+  const [currentRole, setCurrentRole] = useState<'admin' | 'doctor' | 'nurse' | 'receptionist' | ''>('')
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [savingDutyId, setSavingDutyId] = useState<string | null>(null)
@@ -48,9 +49,18 @@ export default function StaffList() {
 
   useEffect(() => {
     const userEmail = localStorage.getItem('user_email')
+    const role = localStorage.getItem('user_role')
     setCurrentUserEmail(userEmail)
+    if (role === 'admin' || role === 'doctor' || role === 'nurse' || role === 'receptionist') {
+      setCurrentRole(role)
+    }
     fetchStaff()
   }, [])
+
+  const canManageStaff = currentRole === 'admin'
+  const isNurseView = currentRole === 'nurse'
+  const isDoctorView = currentRole === 'doctor'
+  const isReadOnlyView = !canManageStaff
 
   const fetchStaff = async () => {
     try {
@@ -71,7 +81,8 @@ export default function StaffList() {
       }
 
       const userEmail = localStorage.getItem('user_email')
-      if (userEmail) {
+      const userRole = localStorage.getItem('user_role')
+      if (userEmail && userRole === 'admin') {
         staffData = staffData.filter((member) => member.email !== userEmail)
         console.log('📝 Filtered out current user:', userEmail)
       }
@@ -134,6 +145,8 @@ export default function StaffList() {
 
   const filteredStaff = staff.filter((member) => {
     if (member.role === 'receptionist') return false
+    if (isDoctorView && member.role === 'admin') return false
+    if (isNurseView && member.role !== 'doctor') return false
     const matchesRole = !activeRole || member.role === activeRole
     const matchesSearch = 
       member.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -169,16 +182,26 @@ export default function StaffList() {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Staff Accounts</h1>
-          <p className="text-gray-600 text-sm mt-1">Manage staff members and access controls</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {isNurseView ? 'Doctors On Duty' : isDoctorView ? 'Care Team' : 'Doctors & Staff'}
+          </h1>
+          <p className="text-gray-600 text-sm mt-1">
+            {isNurseView
+              ? 'Review available doctors, specialties, and duty status before recommending a patient.'
+              : isDoctorView
+                ? 'Read-only care team directory for doctors and nurses across the clinic.'
+                : 'Manage doctor and staff accounts'}
+          </p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition"
-        >
-          <Plus size={20} />
-          Add Staff Member
-        </button>
+        {canManageStaff && (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition"
+          >
+            <Plus size={20} />
+            Add Team Member
+          </button>
+        )}
       </div>
 
       {error && (
@@ -194,13 +217,13 @@ export default function StaffList() {
         </div>
       )}
 
-      {showForm && (
+      {showForm && canManageStaff && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <StaffForm onSuccess={() => { fetchStaff(); setShowForm(false) }} onClose={() => setShowForm(false)} />
         </div>
       )}
 
-      {editingId && (
+      {editingId && canManageStaff && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <StaffForm 
             staff={staff.find(s => s.id === editingId)} 
@@ -210,7 +233,7 @@ export default function StaffList() {
         </div>
       )}
 
-      {showDeleteModal && (
+      {showDeleteModal && canManageStaff && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Delete Staff Member</h3>
@@ -266,21 +289,23 @@ export default function StaffList() {
       </div>
 
       {/* Role Filter Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-4">
-        {roleOptions.map((option) => (
-          <button
-            key={option.value || 'all'}
-            onClick={() => setActiveRole(option.value)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-              activeRole === option.value
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
+      {!isReadOnlyView && !isNurseView && (
+        <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-4">
+          {roleOptions.map((option) => (
+            <button
+              key={option.value || 'all'}
+              onClick={() => setActiveRole(option.value)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                activeRole === option.value
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Staff Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -348,40 +373,55 @@ export default function StaffList() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => setEditingId(member.id)}
-                  className="flex-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg font-medium text-sm transition flex items-center justify-center gap-2"
-                >
-                  <Edit2 size={16} />
-                  Edit
-                </button>
-                <button
-                  onClick={() => setShowDeleteModal(member.id)}
-                  className="flex-1 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg font-medium text-sm transition flex items-center justify-center gap-2"
-                >
-                  <Trash2 size={16} />
-                  Delete
-                </button>
-              </div>
+              {canManageStaff ? (
+                <>
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-4 border-t border-gray-200">
+                    <button
+                      onClick={() => setEditingId(member.id)}
+                      className="flex-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg font-medium text-sm transition flex items-center justify-center gap-2"
+                    >
+                      <Edit2 size={16} />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => setShowDeleteModal(member.id)}
+                      className="flex-1 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg font-medium text-sm transition flex items-center justify-center gap-2"
+                    >
+                      <Trash2 size={16} />
+                      Delete
+                    </button>
+                  </div>
 
-              <button
-                onClick={() => handleToggleDuty(member)}
-                disabled={savingDutyId === member.id}
-                className={`w-full mt-2 px-3 py-2 rounded-lg font-medium text-sm transition ${
-                  member.is_on_duty
-                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    : 'bg-green-600 text-white hover:bg-green-700'
-                } disabled:opacity-60 disabled:cursor-not-allowed`}
-              >
-                {savingDutyId === member.id ? (
-                  <span className="inline-flex items-center justify-center gap-2">
-                    <Loader2 size={14} className="animate-spin" />
-                    Saving...
-                  </span>
-                ) : member.is_on_duty ? 'Set Off Duty' : 'Set On Duty'}
-              </button>
+                  <button
+                    onClick={() => handleToggleDuty(member)}
+                    disabled={savingDutyId === member.id}
+                    className={`w-full mt-2 px-3 py-2 rounded-lg font-medium text-sm transition ${
+                      member.is_on_duty
+                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-green-600 text-white hover:bg-green-700'
+                    } disabled:opacity-60 disabled:cursor-not-allowed`}
+                  >
+                    {savingDutyId === member.id ? (
+                      <span className="inline-flex items-center justify-center gap-2">
+                        <Loader2 size={14} className="animate-spin" />
+                        Saving...
+                      </span>
+                    ) : member.is_on_duty ? 'Set Off Duty' : 'Set On Duty'}
+                  </button>
+                </>
+              ) : (
+                <div className="pt-4 border-t border-gray-200">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    {isDoctorView ? 'Read-only team view' : 'Nurse View'}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-600">
+                    {isDoctorView
+                      ? 'Review which doctors and nurses are available while managing patient care.'
+                      : 'Use this list when choosing which doctor should receive the patient.'}
+                  </p>
+                </div>
+              )}
             </div>
           ))
         )}

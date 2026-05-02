@@ -1,8 +1,12 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
-import LoginForm from '@/components/LoginForm'
+
+const LoginForm = dynamic(() => import('@/components/LoginForm'), {
+  ssr: false,
+})
 
 function LoginContent() {
   const searchParams = useSearchParams()

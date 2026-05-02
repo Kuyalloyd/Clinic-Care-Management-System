@@ -15,10 +15,7 @@ export default function PrescriptionsList() {
   const [editingPrescriptionId, setEditingPrescriptionId] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [showAssignModal, setShowAssignModal] = useState<string | null>(null)
-  const [selectedStaffId, setSelectedStaffId] = useState<string>('')
-  const [assigning, setAssigning] = useState(false)
-  const [currentRole, setCurrentRole] = useState<string>('')
+  const [currentRole, setCurrentRole] = useState<'admin' | 'doctor' | 'nurse' | ''>('')
   const [togglingRxId, setTogglingRxId] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'done'>('all')
   const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'error' | 'info' }>({
@@ -37,16 +34,16 @@ export default function PrescriptionsList() {
   useEffect(() => {
     const email = localStorage.getItem('user_email') || ''
     const staffMember = data.staff.find((s) => s.email?.toLowerCase() === email.toLowerCase())
-    setCurrentRole(staffMember?.role || '')
+    if (staffMember?.role === 'admin' || staffMember?.role === 'doctor' || staffMember?.role === 'nurse') {
+      setCurrentRole(staffMember.role)
+    } else {
+      setCurrentRole('')
+    }
     setLoading(false)
   }, [data.staff])
 
   const getPatientName = (patientId: string) => {
     return data.patients.find((p) => p.id === patientId)?.full_name || 'Unknown'
-  }
-
-  const getDoctorName = (staffId: string) => {
-    return data.staff.find((s) => s.id === staffId)?.full_name || 'Unassigned'
   }
 
   const getStaffInfo = (staffId: string) => {
@@ -63,37 +60,21 @@ export default function PrescriptionsList() {
     return data.patients.find((p) => p.id === patientId)
   }
 
-  const handleAssignStaff = async (prescriptionId: string) => {
-    if (!selectedStaffId) {
-      alert('Please select a doctor or nurse')
-      return
+  const getPrescriptionReason = (patientId: string) => {
+    const patient = getPatientData(patientId)
+    if (patient?.symptoms?.trim()) {
+      return patient.symptoms.trim()
     }
 
-    setAssigning(true)
-    try {
-      const response = await fetch(`/api/prescriptions/${prescriptionId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        },
-        body: JSON.stringify({ staff_id: selectedStaffId })
-      })
+    const latestAppointment = [...data.appointments]
+      .filter((appointment) => appointment.patient_id === patientId)
+      .sort((a, b) => {
+        const aTime = new Date(`${a.appointment_date}T${a.appointment_time || '00:00'}`).getTime()
+        const bTime = new Date(`${b.appointment_date}T${b.appointment_time || '00:00'}`).getTime()
+        return bTime - aTime
+      })[0]
 
-      if (!response.ok) {
-        throw new Error('Failed to assign staff')
-      }
-
-      alert('Doctor/Nurse assigned successfully!')
-      setShowAssignModal(null)
-      setSelectedStaffId('')
-      refreshPrescriptions()
-    } catch (error: any) {
-      console.error('Failed to assign staff:', error)
-      alert('Failed to assign staff')
-    } finally {
-      setAssigning(false)
-    }
+    return latestAppointment?.reason?.trim() || ''
   }
 
   const handleDeletePrescription = async (prescriptionId: string, patientName: string) => {
@@ -155,13 +136,23 @@ export default function PrescriptionsList() {
     
     Object.entries(grouped).forEach(([patientId, prescriptions]) => {
       const patientName = getPatientName(patientId).toLowerCase()
+      const reasonText = getPrescriptionReason(patientId).toLowerCase()
+      const medicationText = prescriptions
+        .map((rx) => `${rx.medication_name} ${rx.instructions || ''}`.toLowerCase())
+        .join(' ')
       const statusFilteredPrescriptions = prescriptions.filter((rx) => {
         if (statusFilter === 'all') return true
         if (statusFilter === 'done') return rx.is_completed
         return !rx.is_completed
       })
 
-      if (patientName.includes(searchTerm.toLowerCase())) {
+      const query = searchTerm.toLowerCase()
+
+      if (
+        patientName.includes(query) ||
+        reasonText.includes(query) ||
+        medicationText.includes(query)
+      ) {
         if (statusFilteredPrescriptions.length > 0) {
           filtered[patientId] = statusFilteredPrescriptions
         }
@@ -176,18 +167,23 @@ export default function PrescriptionsList() {
   }
 
   const groups = filteredGroups()
-  const canToggleDone = currentRole === 'doctor' || currentRole === 'admin'
-  const canCreatePrescription = currentRole === 'admin'
-  const canAssignStaff = currentRole === 'admin'
-  const canEditPrescription = currentRole === 'admin'
-  const canDeletePrescription = currentRole === 'admin'
+  const canToggleDone = currentRole === 'nurse'
+  const canCreatePrescription = currentRole === 'doctor'
+  const canEditPrescription = currentRole === 'doctor'
+  const canDeletePrescription = currentRole === 'doctor'
+  const roleMessage =
+    currentRole === 'doctor'
+      ? 'Doctors can create, update, and remove their own prescriptions.'
+      : currentRole === 'nurse'
+        ? 'Nurses can review doctor instructions and mark medicine as given to the patient.'
+        : 'Admins can monitor prescriptions here, while only doctors can issue them.'
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-1">Prescriptions</h2>
-          <p className="text-gray-600 text-sm">Manage patient prescriptions and medications</p>
+          <p className="text-gray-600 text-sm">Track doctor instructions and medication handoff</p>
         </div>
         {canCreatePrescription && (
           <button
@@ -199,6 +195,12 @@ export default function PrescriptionsList() {
           </button>
         )}
       </div>
+
+      {currentRole && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+          <p className="text-sm text-blue-700">{roleMessage}</p>
+        </div>
+      )}
 
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -232,7 +234,7 @@ export default function PrescriptionsList() {
           <div className="space-y-3">
             <input
               type="text"
-              placeholder="Search by patient name or diagnosis..."
+              placeholder="Search by patient name, reason, or medicine..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
@@ -273,6 +275,7 @@ export default function PrescriptionsList() {
             Object.entries(groups).map(([patientId, prescriptions]) => {
               const patient = getPatientData(patientId)
               const firstRx = prescriptions[0]
+              const prescriptionReason = getPrescriptionReason(patientId)
               
               return (
                 <div key={patientId} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
@@ -300,10 +303,10 @@ export default function PrescriptionsList() {
                     </span>
                   </div>
 
-                  {patient?.symptoms && (
+                  {prescriptionReason && (
                     <div className="mb-4 ml-9">
-                      <p className="text-xs text-gray-600 font-medium">Diagnosis:</p>
-                      <p className="text-sm text-blue-600 font-medium">{patient.symptoms}</p>
+                      <p className="text-xs text-gray-600 font-medium">Reason for Prescription:</p>
+                      <p className="text-sm text-blue-600 font-medium">{prescriptionReason}</p>
                     </div>
                   )}
 
@@ -319,7 +322,7 @@ export default function PrescriptionsList() {
                             <th className="text-left py-2 font-medium text-gray-700">Duration</th>
                             <th className="text-left py-2 font-medium text-gray-700">Date of Expiry</th>
                             <th className="text-left py-2 font-medium text-gray-700">Deadline</th>
-                            <th className="text-left py-2 font-medium text-gray-700">Description</th>
+                            <th className="text-left py-2 font-medium text-gray-700">Instructions</th>
                             <th className="text-left py-2 font-medium text-gray-700">Status</th>
                             {canToggleDone && <th className="text-left py-2 font-medium text-gray-700">Action</th>}
                           </tr>
@@ -356,12 +359,12 @@ export default function PrescriptionsList() {
                                 <p className="text-sm font-medium text-gray-900">{deadlineDate}</p>
                               </td>
                               <td className="py-2">
-                                <p className="text-xs text-gray-600 font-medium">Description</p>
+                                <p className="text-xs text-gray-600 font-medium">Instructions</p>
                                 <p className="text-sm font-medium text-gray-900">{rx.instructions || '-'}</p>
                               </td>
                               <td className="py-2">
                                 <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${rx.is_completed ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                  {rx.is_completed ? 'Done' : 'Pending'}
+                                  {rx.is_completed ? 'Given' : 'Pending'}
                                 </span>
                               </td>
                               {canToggleDone && (
@@ -372,7 +375,7 @@ export default function PrescriptionsList() {
                                     disabled={togglingRxId === rx.id}
                                     className={`px-3 py-1 rounded-md text-xs font-medium transition ${rx.is_completed ? 'bg-gray-700 text-white hover:bg-gray-800' : 'bg-green-600 text-white hover:bg-green-700'} disabled:opacity-50`}
                                   >
-                                    {togglingRxId === rx.id ? 'Saving...' : rx.is_completed ? 'Undo' : 'Mark Done'}
+                                    {togglingRxId === rx.id ? 'Saving...' : rx.is_completed ? 'Undo' : 'Mark Given'}
                                   </button>
                                 </td>
                               )}
@@ -497,17 +500,6 @@ export default function PrescriptionsList() {
                       <Printer size={16} />
                       <span>Print</span>
                     </button>
-                    {canAssignStaff && (
-                      <button 
-                        onClick={() => {
-                          setShowAssignModal(prescriptions[0].id)
-                          setSelectedStaffId(prescriptions[0].staff_id || '')
-                        }}
-                        className="px-2 sm:px-4 py-2 text-purple-600 font-medium hover:text-purple-800 transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
-                      >
-                        Assign
-                      </button>
-                    )}
                     {canEditPrescription && (
                       <button 
                         onClick={() => setEditingPrescriptionId(prescriptions[0].id)}
@@ -533,51 +525,6 @@ export default function PrescriptionsList() {
           )}
         </div>
       </div>
-
-          {showAssignModal && canAssignStaff && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Assign Doctor/Nurse</h3>
-                <p className="text-gray-600 mb-4 text-sm">Select a doctor or nurse to assign to this prescription</p>
-                <select
-                  value={selectedStaffId}
-                  onChange={(e) => setSelectedStaffId(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white mb-6"
-                >
-                  <option value="">Select Doctor/Nurse</option>
-                  {data.staff
-                    .filter((staff) => staff.role !== 'admin')
-                    .map((staff) => (
-                      <option key={staff.id} value={staff.id}>
-                        {staff.full_name} ({staff.role})
-                      </option>
-                    ))}
-                </select>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowAssignModal(null)
-                  setSelectedStaffId('')
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  if (showAssignModal) {
-                    handleAssignStaff(showAssignModal)
-                  }
-                }}
-                disabled={assigning}
-                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-              >
-                {assigning ? 'Assigning...' : 'Assign'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showDeleteModal && canDeletePrescription && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

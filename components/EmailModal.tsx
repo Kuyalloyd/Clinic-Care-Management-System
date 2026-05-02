@@ -6,8 +6,12 @@ import { Mail, Send, X } from 'lucide-react'
 interface EmailModalProps {
   patientEmail: string
   patientName: string
-  appointmentDate: string
-  appointmentTime: string
+  appointmentDate?: string
+  appointmentTime?: string
+  title?: string
+  initialSubject?: string
+  initialMessage?: string
+  successMessage?: string
   onClose: () => void
   onSend: (subject: string, message: string) => Promise<void>
 }
@@ -17,15 +21,19 @@ export default function EmailModal({
   patientName,
   appointmentDate,
   appointmentTime,
+  title,
+  initialSubject,
+  initialMessage,
+  successMessage,
   onClose,
   onSend,
 }: EmailModalProps) {
   const [loading, setLoading] = useState(false)
   const [subject, setSubject] = useState(
-    `Appointment Reminder - Clinic Care Management System`
+    initialSubject || `Appointment Reminder - Clinic Care Management System`
   )
   const [message, setMessage] = useState(
-    `Hi ${patientName},\n\nYour appointment has been scheduled at Clinic Care Management System.\n\nDate: ${appointmentDate}\nTime: ${appointmentTime}\n\nPlease reply to this email to confirm your attendance.\n\nThank you!`
+    initialMessage || `Hi ${patientName},\n\nYour appointment has been scheduled at Clinic Care Management System.\n\nDate: ${appointmentDate}\nTime: ${appointmentTime}\n\nPlease reply to this email to confirm your attendance.\n\nThank you!`
   )
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -81,7 +89,7 @@ export default function EmailModal({
           </div>
           <h3 className="text-lg font-semibold text-gray-900">Email Sent Successfully!</h3>
           <p className="text-gray-600">
-            Appointment reminder sent to {patientEmail}
+            {successMessage || `Appointment reminder sent to ${patientEmail}`}
           </p>
         </div>
       </div>
@@ -94,7 +102,7 @@ export default function EmailModal({
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
             <Mail size={20} className="text-blue-600" />
-            Send Appointment Reminder
+            {title || 'Send Appointment Reminder'}
           </h3>
           <button
             onClick={onClose}

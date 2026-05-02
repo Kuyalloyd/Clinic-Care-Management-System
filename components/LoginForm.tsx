@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/apiClient'
 import BrandLoadingOverlay from '@/components/BrandLoadingOverlay'
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { AlertCircle, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -19,6 +19,9 @@ export default function LoginForm() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
+    if (error) {
+      setError('')
+    }
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -34,13 +37,25 @@ export default function LoginForm() {
       localStorage.setItem('auth_token', response.data.session.access_token)
       localStorage.setItem('user_id', response.data.user.id)
       localStorage.setItem('user_email', response.data.user.email)
-      router.push('/dashboard')
+      if (response.data.role) {
+        localStorage.setItem('user_role', response.data.role)
+      } else {
+        localStorage.removeItem('user_role')
+      }
+      router.push(response.data.role === 'admin' ? '/admin' : '/dashboard')
     } catch (err: any) {
       setIsLoggingIn(false)
+      const status = err?.response?.status
+      const apiMessage = err?.response?.data?.error || err?.message || ''
+
       if (!err.response) {
         setError('Cannot connect to server. Please make sure the app is running (npm run dev).')
+      } else if (status === 401) {
+        setError('Incorrect email or password. Please try again.')
+      } else if (typeof apiMessage === 'string' && apiMessage.trim()) {
+        setError(apiMessage)
       } else {
-        setError(err.response?.data?.error || err.message || 'Login failed')
+        setError('Login failed. Please try again.')
       }
     } finally {
       setLoading(false)
@@ -95,8 +110,12 @@ export default function LoginForm() {
         </div>
 
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm font-medium">
-            {error}
+          <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+            <div>
+              <p className="font-semibold">Login Notice</p>
+              <p className="mt-1">{error}</p>
+            </div>
           </div>
         )}
 

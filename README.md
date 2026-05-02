@@ -151,8 +151,8 @@ Before the system will work, you MUST:
 
 **B. Initialize Database:**
 1. Go to **SQL Editor** → **New Query**
-2. Copy entire contents of `supabase/migrations/001_init_schema.sql`
-3. Paste and click **Run**
+2. Run the SQL files inside `supabase/migrations/` in filename order
+3. If your database was set up earlier, check `supabase/MANUAL_FIXES.md` for newer tables like `public.medicines`
 
 See **COMPLETE_SETUP_GUIDE.md** for step-by-step instructions.
 
@@ -361,7 +361,8 @@ npm install
 2. Setup Supabase:
    - Create project at [supabase.com](https://supabase.com)
    - Get your Project URL and Anon Key from Settings > API
-   - Run SQL from `supabase/migrations/001_init_schema.sql` in Supabase SQL editor
+   - Run all SQL files from `supabase/migrations/` in filename order
+   - If you see missing-table errors such as `public.medicines`, use `supabase/MANUAL_FIXES.md`
 
 3. Configure environment variables in `.env.local`:
 ```env
@@ -406,9 +407,9 @@ clinic-care/
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/signup` - Register
-- `POST /api/auth/login` - Login
-- `POST /api/auth/logout` - Logout
+- `POST /api/session/signup` - Register
+- `POST /api/session/login` - Login
+- `POST /api/session/logout` - Logout
 
 ### Patients
 - `GET /api/patients` - List all

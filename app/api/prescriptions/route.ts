@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     let query = supabaseAdmin.from('prescriptions').select('*')
 
     if (patientId) query = query.eq('patient_id', patientId)
-    if (auth.role === 'doctor' || auth.role === 'nurse') {
+    if (auth.role === 'doctor') {
       query = query.eq('staff_id', auth.staffId)
     }
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   try {
     const { auth, errorResponse } = await getRequestAuth(request)
     if (errorResponse || !auth) return errorResponse!
-    const roleError = requireRole(auth, ['admin', 'doctor'])
+    const roleError = requireRole(auth, ['doctor'])
     if (roleError) return roleError
 
     const body = await request.json()

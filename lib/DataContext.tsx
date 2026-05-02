@@ -1,13 +1,14 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
-import { Appointment, Patient, Prescription, Bill, Staff, DutyAssignment } from './types'
+import { Appointment, Patient, Prescription, Bill, Staff, DutyAssignment, Medicine } from './types'
 import { apiClient } from './apiClient'
 
 interface DashboardData {
   patients: Patient[]
   appointments: Appointment[]
   prescriptions: Prescription[]
+  medicines: Medicine[]
   bills: Bill[]
   staff: Staff[]
   dutyAssignments: DutyAssignment[]
@@ -19,6 +20,7 @@ interface DataContextType {
   refreshPatients: () => Promise<void>
   refreshAppointments: () => Promise<void>
   refreshPrescriptions: () => Promise<void>
+  refreshMedicines: () => Promise<void>
   refreshBills: () => Promise<void>
   refreshStaff: () => Promise<void>
   refreshDutyAssignments: () => Promise<void>
@@ -32,6 +34,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     patients: [],
     appointments: [],
     prescriptions: [],
+    medicines: [],
     bills: [],
     staff: [],
     dutyAssignments: [],
@@ -65,6 +68,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const refreshMedicines = useCallback(async () => {
+    try {
+      const response = await apiClient.getMedicines()
+      setData((prev) => ({ ...prev, medicines: response.data || [] }))
+    } catch (error) {
+      console.error('Failed to fetch medicines:', error)
+    }
+  }, [])
+
   const refreshBills = useCallback(async () => {
     setData((prev) => ({ ...prev, bills: [] }))
   }, [])
@@ -90,10 +102,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const refreshAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [patientsRes, appointmentsRes, prescriptionsRes, staffRes, dutyAssignmentsRes] = await Promise.all([
+      const [patientsRes, appointmentsRes, prescriptionsRes, medicinesRes, staffRes, dutyAssignmentsRes] = await Promise.all([
         apiClient.getAllPatients().catch(() => ({ data: [] })),
         apiClient.getAllAppointments().catch(() => ({ data: [] })),
         apiClient.getAllPrescriptions().catch(() => ({ data: [] })),
+        apiClient.getMedicines().catch(() => ({ data: [] })),
         apiClient.getAllStaff().catch(() => ({ data: [] })),
         apiClient.getDutyAssignments().catch(() => ({ data: [] })),
       ])
@@ -101,6 +114,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         patients: patientsRes.data || [],
         appointments: appointmentsRes.data || [],
         prescriptions: prescriptionsRes.data || [],
+        medicines: medicinesRes.data || [],
         bills: [],
         staff: staffRes.data || [],
         dutyAssignments: dutyAssignmentsRes.data || [],
@@ -113,7 +127,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <DataContext.Provider value={{ data, loading, refreshPatients, refreshAppointments, refreshPrescriptions, refreshBills, refreshStaff, refreshDutyAssignments, refreshAll }}>
+    <DataContext.Provider value={{ data, loading, refreshPatients, refreshAppointments, refreshPrescriptions, refreshMedicines, refreshBills, refreshStaff, refreshDutyAssignments, refreshAll }}>
       {children}
     </DataContext.Provider>
   )
